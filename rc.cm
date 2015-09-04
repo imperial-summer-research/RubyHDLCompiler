@@ -1,0 +1,45 @@
+Group is
+
+   (* list of sources *)
+
+   utilities.sml
+   maybe.sml
+   mappings.sml
+   state.sml
+   errors.sml
+   messages.sml
+   rubytype.sml
+   ios.sml
+   base.sml
+   ruby.yacc.sig
+   ruby.lex.sml
+   ruby.yacc.sml
+   ruby.sml
+   circuittype.sml
+   exprs.sml
+   values.sml
+   show.sml
+   compose.sml
+   compileExp.sml
+   wiringPrims.sml
+   arithPrims.sml
+   primTypes.sml
+   data.sml
+   compileDef.sml
+   ioAlias.sml
+   printrbs.sml
+   printalx.sml
+   printblk.sml
+   printxnf.sml
+   ednlib.sml
+   printedf.sml
+   vhdlib.sml
+   printvhd.sml
+   printvlg.sml
+   printmax.sml
+   order.sml
+   CommandLineParse.sml
+   main.sml
+
+   $/basis.cm
+   $/smlnj-lib.cm

@@ -1,0 +1,21 @@
+#!/bin/sh
+# note SML<110.78 may not find files on 64-bit file systems (assumes 32-bit
+# inodes; bug fixed in 110.78)
+SML_EXE=/usr/bin/sml
+RUBY_BYTEFILE=/homes/wl/public/rebecca/bin/rc.x86-linux
+# required version of SML/NJ
+SML_MAJOR_REQUIRED=110
+SML_MINOR_REQUIRED=78
+# actual version of SML
+SML_MAJOR_VERSION=`($SML_EXE @SMLversion) | tr '.' ' ' | awk '{print $2}'`
+SML_MINOR_VERSION=`($SML_EXE @SMLversion) | tr '.' ' ' | awk '{print $3}'`
+# check SML version
+echo "SML version=" $SML_MAJOR_VERSION.$SML_MINOR_VERSION
+if [ $SML_MAJOR_VERSION -gt $SML_MAJOR_REQUIRED -o \
+     $SML_MAJOR_VERSION -eq $SML_MAJOR_REQUIRED \
+	     -a $SML_MINOR_VERSION -ge $SML_MINOR_REQUIRED ]; then
+	$SML_EXE @SMLload=$RUBY_BYTEFILE $*
+else
+	echo "ERROR: need SML/NJ version >= $SML_MAJOR_REQUIRED.$SML_MINOR_REQUIRED"
+	exit 127
+fi

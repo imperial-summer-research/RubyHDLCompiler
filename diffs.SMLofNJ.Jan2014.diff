@@ -1,0 +1,3717 @@
+diff -r 9c58b1a8a60b compiler/arithPrims.sml
+--- a/compiler/arithPrims.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/arithPrims.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -8,20 +8,20 @@
+ 
+ structure ArithPrims :
+   sig
+-        val arithNeg    : const           -> value
+-        val arithPlus   : (const * const) -> value
+-        val arithMinus  : (const * const) -> value
+-        val arithTimes  : (const * const) -> value
+-        val arithDivide : (const * const) -> value
+-        val arithMax    : (const * const) -> value
+-        val arithMin    : (const * const) -> value
+-        val arithMod    : (int   *   int) -> value
+-        val arithGtn    : (const * const) -> value
+-        val arithGeq    : (const * const) -> value
+-        val arithLtn    : (const * const) -> value
+-        val arithLeq    : (const * const) -> value
+-        val arithEq     : (const * const) -> value
+-        val arithNot    : int             -> value
++        val arithNeg    : Rubytype.const           -> Values.value
++        val arithPlus   : (Rubytype.const * Rubytype.const) -> Values.value
++        val arithMinus  : (Rubytype.const * Rubytype.const) -> Values.value
++        val arithTimes  : (Rubytype.const * Rubytype.const) -> Values.value
++        val arithDivide : (Rubytype.const * Rubytype.const) -> Values.value
++        val arithMax    : (Rubytype.const * Rubytype.const) -> Values.value
++        val arithMin    : (Rubytype.const * Rubytype.const) -> Values.value
++        val arithMod    : (int   *   int) -> Values.value
++        val arithGtn    : (Rubytype.const * Rubytype.const) -> Values.value
++        val arithGeq    : (Rubytype.const * Rubytype.const) -> Values.value
++        val arithLtn    : (Rubytype.const * Rubytype.const) -> Values.value
++        val arithLeq    : (Rubytype.const * Rubytype.const) -> Values.value
++        val arithEq     : (Rubytype.const * Rubytype.const) -> Values.value
++        val arithNot    : int             -> Values.value
+   end =
+ struct
+ 
+@@ -34,8 +34,8 @@
+ (***                                                                    ***)
+ (**************************************************************************)
+ 
+-fun intValue  i = CONSTANT (INT i)
+-fun realValue i = CONSTANT (REAL i)
++fun intValue  i = Values.CONSTANT (Rubytype.INT i)
++fun realValue i = Values.CONSTANT (Rubytype.REAL i)
+ 
+ (**************************************************************************)
+ 
+@@ -49,73 +49,73 @@
+ 
+ (**************************************************************************)
+ 
+-fun arithNeg    (INT n)            = intValue  (~n)
+-  | arithNeg    (REAL n)           = realValue (~n)
++fun arithNeg    (Rubytype.INT n)            = intValue  (~n)
++  | arithNeg    (Rubytype.REAL n)           = realValue (~n)
+ 
+-fun arithPlus   (INT  n1, INT  n2) = intValue  (n1      + n2)
+-  | arithPlus   (INT  n1, REAL n2) = realValue (real n1 + n2)
+-  | arithPlus   (REAL n1, INT  n2) = realValue (n1      + real n2)
+-  | arithPlus   (REAL n1, REAL n2) = realValue (n1      + n2)
++fun arithPlus   (Rubytype.INT  n1, Rubytype.INT  n2) = intValue  (n1      + n2)
++  | arithPlus   (Rubytype.INT  n1, Rubytype.REAL n2) = realValue (real n1 + n2)
++  | arithPlus   (Rubytype.REAL n1, Rubytype.INT  n2) = realValue (n1      + real n2)
++  | arithPlus   (Rubytype.REAL n1, Rubytype.REAL n2) = realValue (n1      + n2)
+ 
+-fun arithMinus  (INT  n1, INT  n2) = intValue  (n1      - n2)
+-  | arithMinus  (INT  n1, REAL n2) = realValue (real n1 - n2)
+-  | arithMinus  (REAL n1, INT  n2) = realValue (n1      - real n2)
+-  | arithMinus  (REAL n1, REAL n2) = realValue (n1      - n2)
++fun arithMinus  (Rubytype.INT  n1, Rubytype.INT  n2) = intValue  (n1      - n2)
++  | arithMinus  (Rubytype.INT  n1, Rubytype.REAL n2) = realValue (real n1 - n2)
++  | arithMinus  (Rubytype.REAL n1, Rubytype.INT  n2) = realValue (n1      - real n2)
++  | arithMinus  (Rubytype.REAL n1, Rubytype.REAL n2) = realValue (n1      - n2)
+ 
+-fun arithTimes  (INT  n1, INT  n2) = intValue  (n1      * n2)
+-  | arithTimes  (INT  n1, REAL n2) = realValue (real n1 * n2)
+-  | arithTimes  (REAL n1, INT  n2) = realValue (n1      * real n2)
+-  | arithTimes  (REAL n1, REAL n2) = realValue (n1      * n2)
++fun arithTimes  (Rubytype.INT  n1, Rubytype.INT  n2) = intValue  (n1      * n2)
++  | arithTimes  (Rubytype.INT  n1, Rubytype.REAL n2) = realValue (real n1 * n2)
++  | arithTimes  (Rubytype.REAL n1, Rubytype.INT  n2) = realValue (n1      * real n2)
++  | arithTimes  (Rubytype.REAL n1, Rubytype.REAL n2) = realValue (n1      * n2)
+ 
+-fun arithDivide (_,       INT  0)  = def_error "division by 0"
++fun arithDivide (_,       Rubytype.INT  0)  = Errors.def_error "division by 0"
+   (* tjt97 - can't use real in pattern match
+-  | arithDivide (_,       REAL 0.0)= def_error "division by 0.0"
++  | arithDivide (_,       Rubytype.REAL 0.0)= Errors.def_error "division by 0.0"
+   *)
+-  | arithDivide (INT  n1, INT  n2) = intValue  (n1      div n2)
+-  | arithDivide (INT  n1, REAL n2) = (if Real.==(n2,0.0) then def_error "division by 0.0" else realValue (real n1 / n2))
+-  | arithDivide (REAL n1, INT  n2) = realValue (n1      / real n2)
+-  | arithDivide (REAL n1, REAL n2) = (if Real.==(n2,0.0) then def_error "division by 0.0" else realValue (n1      / n2))
++  | arithDivide (Rubytype.INT  n1, Rubytype.INT  n2) = intValue  (n1      div n2)
++  | arithDivide (Rubytype.INT  n1, Rubytype.REAL n2) = (if Real.==(n2,0.0) then Errors.def_error "division by 0.0" else realValue (real n1 / n2))
++  | arithDivide (Rubytype.REAL n1, Rubytype.INT  n2) = realValue (n1      / real n2)
++  | arithDivide (Rubytype.REAL n1, Rubytype.REAL n2) = (if Real.==(n2,0.0) then Errors.def_error "division by 0.0" else realValue (n1      / n2))
+ 
+-fun arithMax    (INT  n1, INT  n2) = intValue  (Int.max  (n1,      n2))
+-  | arithMax    (INT  n1, REAL n2) = realValue (rmax (real n1, n2))
+-  | arithMax    (REAL n1, INT  n2) = realValue (rmax (n1,      real n2))
+-  | arithMax    (REAL n1, REAL n2) = realValue (rmax (n1,      n2))
++fun arithMax    (Rubytype.INT  n1, Rubytype.INT  n2) = intValue  (Int.max  (n1,      n2))
++  | arithMax    (Rubytype.INT  n1, Rubytype.REAL n2) = realValue (rmax (real n1, n2))
++  | arithMax    (Rubytype.REAL n1, Rubytype.INT  n2) = realValue (rmax (n1,      real n2))
++  | arithMax    (Rubytype.REAL n1, Rubytype.REAL n2) = realValue (rmax (n1,      n2))
+ 
+-fun arithMin    (INT  n1, INT  n2) = intValue  (Int.min  (n1,      n2))
+-  | arithMin    (INT  n1, REAL n2) = realValue (rmin (real n1, n2))
+-  | arithMin    (REAL n1, INT  n2) = realValue (rmin (n1,      real n2))
+-  | arithMin    (REAL n1, REAL n2) = realValue (rmin (n1,      n2))
++fun arithMin    (Rubytype.INT  n1, Rubytype.INT  n2) = intValue  (Int.min  (n1,      n2))
++  | arithMin    (Rubytype.INT  n1, Rubytype.REAL n2) = realValue (rmin (real n1, n2))
++  | arithMin    (Rubytype.REAL n1, Rubytype.INT  n2) = realValue (rmin (n1,      real n2))
++  | arithMin    (Rubytype.REAL n1, Rubytype.REAL n2) = realValue (rmin (n1,      n2))
+ 
+-fun arithMod    (_,             0) = def_error "$mod 0"
++fun arithMod    (_,             0) = Errors.def_error "$mod 0"
+   | arithMod    (     n1,      n2) = intValue  (n1 mod n2)
+ 
+-fun arithGtn    (INT  n1, INT  n2) = intValue  (if n1 > n2 then 1 else 0)
+-  | arithGtn    (INT  n1, REAL n2) = intValue  (if real n1 > n2 then 1 else 0)
+-  | arithGtn    (REAL n1, INT  n2) = intValue  (if n1 > real n2 then 1 else 0)
+-  | arithGtn    (REAL n1, REAL n2) = intValue  (if n1 > n2 then 1 else 0)
++fun arithGtn    (Rubytype.INT  n1, Rubytype.INT  n2) = intValue  (if n1 > n2 then 1 else 0)
++  | arithGtn    (Rubytype.INT  n1, Rubytype.REAL n2) = intValue  (if real n1 > n2 then 1 else 0)
++  | arithGtn    (Rubytype.REAL n1, Rubytype.INT  n2) = intValue  (if n1 > real n2 then 1 else 0)
++  | arithGtn    (Rubytype.REAL n1, Rubytype.REAL n2) = intValue  (if n1 > n2 then 1 else 0)
+ 
+-fun arithGeq    (INT  n1, INT  n2) = intValue  (if n1 >= n2 then 1 else 0)
+-  | arithGeq    (INT  n1, REAL n2) = intValue  (if real n1 >= n2 then 1 else 0)
+-  | arithGeq    (REAL n1, INT  n2) = intValue  (if n1 >= real n2 then 1 else 0)
+-  | arithGeq    (REAL n1, REAL n2) = intValue  (if n1 >= n2 then 1 else 0)
++fun arithGeq    (Rubytype.INT  n1, Rubytype.INT  n2) = intValue  (if n1 >= n2 then 1 else 0)
++  | arithGeq    (Rubytype.INT  n1, Rubytype.REAL n2) = intValue  (if real n1 >= n2 then 1 else 0)
++  | arithGeq    (Rubytype.REAL n1, Rubytype.INT  n2) = intValue  (if n1 >= real n2 then 1 else 0)
++  | arithGeq    (Rubytype.REAL n1, Rubytype.REAL n2) = intValue  (if n1 >= n2 then 1 else 0)
+ 
+-fun arithLtn    (INT  n1, INT  n2) = intValue  (if n1 < n2 then 1 else 0)
+-  | arithLtn    (INT  n1, REAL n2) = intValue  (if real n1 < n2 then 1 else 0)
+-  | arithLtn    (REAL n1, INT  n2) = intValue  (if n1 < real n2 then 1 else 0)
+-  | arithLtn    (REAL n1, REAL n2) = intValue  (if n1 < n2 then 1 else 0)
++fun arithLtn    (Rubytype.INT  n1, Rubytype.INT  n2) = intValue  (if n1 < n2 then 1 else 0)
++  | arithLtn    (Rubytype.INT  n1, Rubytype.REAL n2) = intValue  (if real n1 < n2 then 1 else 0)
++  | arithLtn    (Rubytype.REAL n1, Rubytype.INT  n2) = intValue  (if n1 < real n2 then 1 else 0)
++  | arithLtn    (Rubytype.REAL n1, Rubytype.REAL n2) = intValue  (if n1 < n2 then 1 else 0)
+ 
+-fun arithLeq    (INT  n1, INT  n2) = intValue  (if n1 <= n2 then 1 else 0)
+-  | arithLeq    (INT  n1, REAL n2) = intValue  (if real n1 <= n2 then 1 else 0)
+-  | arithLeq    (REAL n1, INT  n2) = intValue  (if n1 <= real n2 then 1 else 0)
+-  | arithLeq    (REAL n1, REAL n2) = intValue  (if n1 <= n2 then 1 else 0) 
++fun arithLeq    (Rubytype.INT  n1, Rubytype.INT  n2) = intValue  (if n1 <= n2 then 1 else 0)
++  | arithLeq    (Rubytype.INT  n1, Rubytype.REAL n2) = intValue  (if real n1 <= n2 then 1 else 0)
++  | arithLeq    (Rubytype.REAL n1, Rubytype.INT  n2) = intValue  (if n1 <= real n2 then 1 else 0)
++  | arithLeq    (Rubytype.REAL n1, Rubytype.REAL n2) = intValue  (if n1 <= n2 then 1 else 0) 
+  
+-fun arithEq     (INT  n1, INT  n2) = intValue  (if n1 = n2 then 1 else 0)
+-  | arithEq     (INT  n1, REAL n2) = intValue  (if Real.==(real n1,n2) then 1 else 0)
+-  | arithEq     (REAL n1, INT  n2) = intValue  (if Real.==(n1,real n2) then 1 else 0)
+-  | arithEq     (REAL n1, REAL n2) = intValue  (if Real.==(n1,n2) then 1 else 0) 
++fun arithEq     (Rubytype.INT  n1, Rubytype.INT  n2) = intValue  (if n1 = n2 then 1 else 0)
++  | arithEq     (Rubytype.INT  n1, Rubytype.REAL n2) = intValue  (if Real.==(real n1,n2) then 1 else 0)
++  | arithEq     (Rubytype.REAL n1, Rubytype.INT  n2) = intValue  (if Real.==(n1,real n2) then 1 else 0)
++  | arithEq     (Rubytype.REAL n1, Rubytype.REAL n2) = intValue  (if Real.==(n1,n2) then 1 else 0) 
+  
+ fun arithNot    n = if n=1 then intValue 0 else if n=0 then intValue 1
+-                    else def_error "Not n -- n needs to be 0 or 1"
++                    else Errors.def_error "Not n -- n needs to be 0 or 1"
+ 
+ (*************************************************************************)
+ (**************************************************************************)
+diff -r 9c58b1a8a60b compiler/circuittype.sml
+--- a/compiler/circuittype.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/circuittype.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -19,7 +19,8 @@
+ 
+ datatype device = NOTHING       (* a placeholder; not a real device *)
+                 | D             (* delay; i.e. a D-type flip-flop *)
+-                | DI   of const (* initialised delay *)
++				          (* tjt, Jan 2014*)
++                | DI   of Rubytype.const (* initialised delay *)
+                 | MUX  of int   (* multiplexor *)
+                 | SDPR of int   (* serial-parallel converter *)
+                 | PDSR of int   (* parallel-serial converter *)
+@@ -79,7 +80,8 @@
+ (***                                                                    ***)
+ (**************************************************************************)
+ 
+-and exprtype    = CON      of const
++(* tjt, Jan 2014 *)
++and exprtype    = CON      of Rubytype.const
+                 | WIRE     of (dir * int * int)
+                 | LIST     of (expr list)
+                 | EXPR     of expr            (* created during unification *)
+diff -r 9c58b1a8a60b compiler/compileDef.sml
+--- a/compiler/compileDef.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/compileDef.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -9,8 +9,8 @@
+ 
+ structure CompileDef :
+   sig
+-        val storeDef  : defn -> unit
+-        val globalDef : string -> value
++        val storeDef  : Rubytype.defn -> unit
++        val globalDef : string -> Values.value
+   end =
+ struct
+ 
+@@ -23,7 +23,7 @@
+ (***                                                                    ***)
+ (**************************************************************************)
+ 
+-val defTab   = newTable DefTabSize :    (string, unit -> value) table;
++val defTab   = Mappings.newTable State.DefTabSize :    (string, unit -> Values.value) Mappings.table;
+ 
+ (**************************************************************************)
+ (***                                                                    ***)
+@@ -35,23 +35,23 @@
+ (**************************************************************************)
+ 
+ 
+-fun storeDef (Fdefn (f,xs,e))                   (* Fdefn in rubytype.sml *)
+-        = (pushFun f;                           (* for error reporting *)
++fun storeDef (Rubytype.Fdefn (f,xs,e))                   (* Fdefn in rubytype.sml *)
++        = (State.pushFun f;                           (* for error reporting *)
+ 
+-           (if       xs <> remdups xs
+-            then     def_error "repeated parameter"
+-            else if  (successful (lookup defTab f)  orelse successful (prim f))
+-                     andalso not (!Testing)
+-            then     def_error "already defined"
+-            else     store defTab (f, fn () => def2value f globalDef (xs,e)));
++           (if       xs <> Utilities.remdups xs
++            then     Errors.def_error "repeated parameter"
++            else if  (Maybe.successful (Mappings.lookup defTab f)  orelse Maybe.successful (prim f))
++                     andalso not (!State.Testing)
++            then     Errors.def_error "already defined"
++            else     Mappings.store defTab (f, fn () => def2value f globalDef (xs,e)));
+ 
+-           popFun f)                            (* lookup, store in mappings.sml *)
++           State.popFun f)                            (* lookup, store in mappings.sml *)
+ 
+-  | storeDef (Ddefn xe)
+-        = recordData xe
++  | storeDef (Rubytype.Ddefn xe)
++        = Data.recordData xe
+ 
+-  | storeDef (Include n)
+-        = IncludeFiles := n :: (!IncludeFiles)
++  | storeDef (Rubytype.Include n)
++        = State.IncludeFiles := n :: (!State.IncludeFiles)
+ 
+ (**************************************************************************)
+ (***                                                                    ***)
+@@ -66,12 +66,12 @@
+ (**************************************************************************)
+ 
+ and def2value name env ([],    e)
+-        = #2 (pushFun name,
+-              exp2value name env e,
+-              popFun name)
++        = #2 (State.pushFun name,
++              CompileExp.exp2value name env e,
++              State.popFun name)
+ 
+   | def2value name env (x::xs, e)  (* name is name of fn and xs is parameter *)
+-        = FUNCTION (fn v => def2value name (extendMapping ((x,v), env))
++        = Values.FUNCTION (fn v => def2value name (Mappings.extendMapping ((x,v), env))
+                                            (xs,e)
+                    )
+ 
+@@ -83,85 +83,85 @@
+ (**************************************************************************)
+ 
+ and globalDef x = let  val p = prim x
+-                  in   if    successful p
+-                       then  (CurrentPrim := x;    (* for error reporting *)
+-                              the p)
+-                       else  let  val fundef = lookup defTab x
+-                             in   if    successful fundef
+-                                  then  the fundef ()
+-                                  else  def_error (x ^ " undefined")
++                  in   if    Maybe.successful p
++                       then  (State.CurrentPrim := x;    (* for error reporting *)
++                              Maybe.the p)
++                       else  let  val fundef = Mappings.lookup defTab x
++                             in   if    Maybe.successful fundef
++                                  then  Maybe.the fundef ()
++                                  else  Errors.def_error (x ^ " undefined")
+                              end
+                   end
+ 
+-and prim "D"        = success (unary    D)
+-  | prim "DI"       = success (unary_k  DI)
+-  | prim "not"      = success (unary    NOT)
+-  | prim "inc"      = success (unary    INC)
+-  | prim "dec"      = success (unary    DEC)
+-  | prim "AD"       = success (unary    AD)
+-  | prim "fac"      = success (unary    FAC)
+-  | prim "bit2int"  = success (unary    BTOI)
+-  | prim "int2bit"  = success (unary    ITOB)
+-  | prim "exp"      = success (unary    EXP)
+-  | prim "log"      = success (unary    LOG)
+-  | prim "int2real" = success (unary    INT2REAL)
+-  | prim "real2int" = success (unary    REAL2INT)
+-  | prim "abs"      = success (unary    ABS)
+-  | prim "minus"    = success (binary   SUB)
+-  | prim "add"      = success (binary   ADD)
+-  | prim "mult"     = success (binary   MULT)
+-  | prim "div"      = success (binary   DIV)
+-  | prim "mod"      = success (binary   MOD)
+-  | prim "eq"       = success (binary   EQ)
+-  | prim "sml"      = success (binary   LT)
+-  | prim "lgr"      = success (binary   GT)
+-  | prim "ltn"      = success (binary   LT)
+-  | prim "gtn"      = success (binary   GT)
+-  | prim "leq"      = success (binary   LE)
+-  | prim "geq"      = success (binary   GE)
+-  | prim "gcd"      = success (binary   GCD)
+-  | prim "max"      = success (binary   MAX)
+-  | prim "min"      = success (binary   MIN)
+-  | prim "and"      = success (binary   AND)
+-  | prim "or"       = success (binary   OR)
+-  | prim "xor"      = success (binary   XOR)
+-  | prim "nand"     = success (binary   NAND)
+-  | prim "nor"      = success (binary   NOR)
+-  | prim "xnor"     = success (binary   XNOR)
+-  | prim "if"       = success (ternary  IF)
+-  | prim "sdpr"     = success (one_in_i_outs   SDPR) (* one_in_i_outs in primTypes *)
+-  | prim "uint2bit" = success (one_in_i_outs   UINT2BIT)
+-  | prim "sint2bit" = success (one_in_i_outs   SINT2BIT)
+-  | prim "ureal2bit" = success (one_in_ij_outs UREAL2BIT)
+-  | prim "sreal2bit" = success (one_in_ij_outs SREAL2BIT)
+-  | prim "pdsr"      = success (i_ins_one_out  PDSR)
+-  | prim "bit2uint"  = success (i_ins_one_out  BIT2UINT)
+-  | prim "bit2sint"  = success (i_ins_one_out  BIT2SINT)
+-  | prim "bit2ureal" = success (ij_ins_one_out BIT2UREAL)
+-  | prim "bit2sreal" = success (ij_ins_one_out BIT2SREAL)
+-  | prim "muxr"      = success (one_and_i_ins_one_out MUX)
++and prim "D"        = Maybe.success (PrimTypes.unary    Circuittype.D)
++  | prim "DI"       = Maybe.success (PrimTypes.unary_k  Circuittype.DI)
++  | prim "not"      = Maybe.success (PrimTypes.unary    Circuittype.NOT)
++  | prim "inc"      = Maybe.success (PrimTypes.unary    Circuittype.INC)
++  | prim "dec"      = Maybe.success (PrimTypes.unary    Circuittype.DEC)
++  | prim "AD"       = Maybe.success (PrimTypes.unary    Circuittype.AD)
++  | prim "fac"      = Maybe.success (PrimTypes.unary    Circuittype.FAC)
++  | prim "bit2int"  = Maybe.success (PrimTypes.unary    Circuittype.BTOI)
++  | prim "int2bit"  = Maybe.success (PrimTypes.unary    Circuittype.ITOB)
++  | prim "exp"      = Maybe.success (PrimTypes.unary    Circuittype.EXP)
++  | prim "log"      = Maybe.success (PrimTypes.unary    Circuittype.LOG)
++  | prim "int2real" = Maybe.success (PrimTypes.unary    Circuittype.INT2REAL)
++  | prim "real2int" = Maybe.success (PrimTypes.unary    Circuittype.REAL2INT)
++  | prim "abs"      = Maybe.success (PrimTypes.unary    Circuittype.ABS)
++  | prim "minus"    = Maybe.success (PrimTypes.binary   Circuittype.SUB)
++  | prim "add"      = Maybe.success (PrimTypes.binary   Circuittype.ADD)
++  | prim "mult"     = Maybe.success (PrimTypes.binary   Circuittype.MULT)
++  | prim "div"      = Maybe.success (PrimTypes.binary   Circuittype.DIV)
++  | prim "mod"      = Maybe.success (PrimTypes.binary   Circuittype.MOD)
++  | prim "eq"       = Maybe.success (PrimTypes.binary   Circuittype.EQ)
++  | prim "sml"      = Maybe.success (PrimTypes.binary   Circuittype.LT)
++  | prim "lgr"      = Maybe.success (PrimTypes.binary   Circuittype.GT)
++  | prim "ltn"      = Maybe.success (PrimTypes.binary   Circuittype.LT)
++  | prim "gtn"      = Maybe.success (PrimTypes.binary   Circuittype.GT)
++  | prim "leq"      = Maybe.success (PrimTypes.binary   Circuittype.LE)
++  | prim "geq"      = Maybe.success (PrimTypes.binary   Circuittype.GE)
++  | prim "gcd"      = Maybe.success (PrimTypes.binary   Circuittype.GCD)
++  | prim "max"      = Maybe.success (PrimTypes.binary   Circuittype.MAX)
++  | prim "min"      = Maybe.success (PrimTypes.binary   Circuittype.MIN)
++  | prim "and"      = Maybe.success (PrimTypes.binary   Circuittype.AND)
++  | prim "or"       = Maybe.success (PrimTypes.binary   Circuittype.OR)
++  | prim "xor"      = Maybe.success (PrimTypes.binary   Circuittype.XOR)
++  | prim "nand"     = Maybe.success (PrimTypes.binary   Circuittype.NAND)
++  | prim "nor"      = Maybe.success (PrimTypes.binary   Circuittype.NOR)
++  | prim "xnor"     = Maybe.success (PrimTypes.binary   Circuittype.XNOR)
++  | prim "if"       = Maybe.success (PrimTypes.ternary  Circuittype.IF)
++  | prim "sdpr"     = Maybe.success (PrimTypes.one_in_i_outs   Circuittype.SDPR) (* one_in_i_outs in primTypes *)
++  | prim "uint2bit" = Maybe.success (PrimTypes.one_in_i_outs   Circuittype.UINT2BIT)
++  | prim "sint2bit" = Maybe.success (PrimTypes.one_in_i_outs   Circuittype.SINT2BIT)
++  | prim "ureal2bit" = Maybe.success (PrimTypes.one_in_ij_outs Circuittype.UREAL2BIT)
++  | prim "sreal2bit" = Maybe.success (PrimTypes.one_in_ij_outs Circuittype.SREAL2BIT)
++  | prim "pdsr"      = Maybe.success (PrimTypes.i_ins_one_out  Circuittype.PDSR)
++  | prim "bit2uint"  = Maybe.success (PrimTypes.i_ins_one_out  Circuittype.BIT2UINT)
++  | prim "bit2sint"  = Maybe.success (PrimTypes.i_ins_one_out  Circuittype.BIT2SINT)
++  | prim "bit2ureal" = Maybe.success (PrimTypes.ij_ins_one_out Circuittype.BIT2UREAL)
++  | prim "bit2sreal" = Maybe.success (PrimTypes.ij_ins_one_out Circuittype.BIT2SREAL)
++  | prim "muxr"      = Maybe.success (PrimTypes.one_and_i_ins_one_out Circuittype.MUX)
+ 
+-  | prim "~"        = success (num_prim     arithNeg)
+-  | prim "+"        = success (num_num_prim arithPlus)
+-  | prim "-"        = success (num_num_prim arithMinus)
+-  | prim "*"        = success (num_num_prim arithTimes)
+-  | prim "/"        = success (num_num_prim arithDivide)
+-  | prim "$max"     = success (num_num_prim arithMax)
+-  | prim "$min"     = success (num_num_prim arithMin)
+-  | prim "$mod"     = success (int_int_prim arithMod)
+-  | prim "$gtn"     = success (num_num_prim arithGtn)
+-  | prim "$geq"     = success (num_num_prim arithGeq)
+-  | prim "$ltn"     = success (num_num_prim arithLtn)
+-  | prim "$leq"     = success (num_num_prim arithLeq)
+-  | prim "$eq"      = success (num_num_prim arithEq)
+-  | prim "Not"      = success (int_prim     arithNot)
++  | prim "~"        = Maybe.success (PrimTypes.num_prim     ArithPrims.arithNeg)
++  | prim "+"        = Maybe.success (PrimTypes.num_num_prim ArithPrims.arithPlus)
++  | prim "-"        = Maybe.success (PrimTypes.num_num_prim ArithPrims.arithMinus)
++  | prim "*"        = Maybe.success (PrimTypes.num_num_prim ArithPrims.arithTimes)
++  | prim "/"        = Maybe.success (PrimTypes.num_num_prim ArithPrims.arithDivide)
++  | prim "$max"     = Maybe.success (PrimTypes.num_num_prim ArithPrims.arithMax)
++  | prim "$min"     = Maybe.success (PrimTypes.num_num_prim ArithPrims.arithMin)
++  | prim "$mod"     = Maybe.success (PrimTypes.int_int_prim ArithPrims.arithMod)
++  | prim "$gtn"     = Maybe.success (PrimTypes.num_num_prim ArithPrims.arithGtn)
++  | prim "$geq"     = Maybe.success (PrimTypes.num_num_prim ArithPrims.arithGeq)
++  | prim "$ltn"     = Maybe.success (PrimTypes.num_num_prim ArithPrims.arithLtn)
++  | prim "$leq"     = Maybe.success (PrimTypes.num_num_prim ArithPrims.arithLeq)
++  | prim "$eq"      = Maybe.success (PrimTypes.num_num_prim ArithPrims.arithEq)
++  | prim "Not"      = Maybe.success (PrimTypes.int_prim     ArithPrims.arithNot)
+ 
+-  | prim "append"   = success (nat_nat_prim append)
++  | prim "append"   = Maybe.success (PrimTypes.nat_nat_prim WiringPrims.append)
+ 
+-  | prim _          = failure
++  | prim _          = Maybe.failure
+ 
+-(**************************************************************************)
+-(**************************************************************************)
++(**************************************************************Circuittype.************)
++(**************************************************************Circuittype.************)
+ 
+ end (* of structure CompileDef *);
+ (* open CompileDef *)
+diff -r 9c58b1a8a60b compiler/compileExp.sml
+--- a/compiler/compileExp.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/compileExp.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -8,7 +8,8 @@
+ 
+ structure CompileExp :
+   sig
+-        val exp2value : string -> (string->value) -> exp -> value
++  		(*tjt, Jan 2014: value -> Values.value*)
++        val exp2value : string -> (string->Values.value) -> Rubytype.exp -> Values.value
+   end =
+ struct
+ 
+@@ -20,21 +21,21 @@
+ (***                                                                    ***)
+ (**************************************************************************)
+ 
+-fun exp2value name env (Const d)
+-        = CONSTANT d
++fun exp2value name env (Rubytype.Const d)
++        = Values.CONSTANT d
+ 
+-  | exp2value name env (Var x)
++  | exp2value name env (Rubytype.Var x)
+         = let  val x' = env x
+-               val (v,[]) = apply (x',[])
++               val (v,[]) = Values.apply (x',[])
+           in   v
+           end
+ 
+-  | exp2value name env (Let ([],e))
++  | exp2value name env (Rubytype.Let ([],e))
+         = exp2value name env e
+-  | exp2value name env (Let ((x0,e0)::es,e))
++  | exp2value name env (Rubytype.Let ((x0,e0)::es,e))
+         = let val v0   = exp2value name env e0
+-              val env0 = extendMapping ((x0,v0),env)
+-          in  exp2value name env0 (Let (es,e))
++              val env0 = Mappings.extendMapping ((x0,v0),env)
++          in  exp2value name env0 (Rubytype.Let (es,e))
+           end
+ 
+ (**************************************************************************)
+@@ -47,14 +48,14 @@
+ (***    (which contains no gates):                                      ***)
+ (**************************************************************************)
+ 
+-  | exp2value name env (Wiring (w1,w2))
+-        = let fun io2expr env (VAR x)         = env x
+-                | io2expr env (CONST d)       = con d
+-                | io2expr env (PROD ds)       = list (map (io2expr env) ds)
+-              val xs = iovars w1 @ iovars w2
+-              val ends = map (fn x=>(x, occurrences x xs)) (remdups xs)
+-          in  CIRCUIT (fn () => let val pairs = map (fn (x,e)=>(x,poly e)) ends
+-                                    val mapping = pairs2mapping pairs
++  | exp2value name env (Rubytype.Wiring (w1,w2))
++        = let fun io2expr env (Rubytype.VAR x)         = env x
++                | io2expr env (Rubytype.CONST d)       = Exprs.con d
++                | io2expr env (Rubytype.PROD ds)       = Exprs.list (map (io2expr env) ds)
++              val xs = Ios.iovars w1 @ Ios.iovars w2
++              val ends = map (fn x=>(x, Utilities.occurrences x xs)) (Utilities.remdups xs)
++          in  Values.CIRCUIT (fn () => let val pairs = map (fn (x,e)=>(x,Exprs.poly e)) ends
++                                    val mapping = Mappings.pairs2mapping pairs
+                                     val dom = io2expr mapping w1
+                                     val ran = io2expr mapping w2
+                                 in  (dom, ran, [])               (*no devices*)
+@@ -66,74 +67,74 @@
+ (***    CurrentPrim must be set in case an error message is generated:  ***)
+ (**************************************************************************)
+ 
+-  | exp2value name env (Seq (pos,e1,e2))
+-        = CIRCUIT (fn () => #2 (pushFun name,
+-                                let  val dummy = TextPosition := pos
++  | exp2value name env (Rubytype.Seq (pos,e1,e2))
++        = Values.CIRCUIT (fn () => #2 (State.pushFun name,
++                                let  val dummy = Errors.TextPosition := pos
+                                      val v1 = exp2value name env e1
+                                      val v2 = exp2value name env e2
+-                                     val dummy = CurrentPrim := ";"
+-                                     val c1 = value2circuit v1
+-                                     val c2 = value2circuit v2
+-                                in   seq (c1, c2)
++                                     val dummy = State.CurrentPrim := ";"
++                                     val c1 = Values.value2circuit v1
++                                     val c2 = Values.value2circuit v2
++                                in   Compose.seq (c1, c2)
+                                 end,
+-                                popFun name)
++                                State.popFun name)
+                   )
+ 
+-  | exp2value name env (Par es)
+-        = CIRCUIT (fn () => #2 (pushFun name,
++  | exp2value name env (Rubytype.Par es)
++        = Values.CIRCUIT (fn () => #2 (State.pushFun name,
+                                 let  val vs = map (exp2value name env) es
+-                                     val dummy = CurrentPrim := "||"
+-                                     val cs = map value2circuit vs
+-                                in   par cs
++                                     val dummy = State.CurrentPrim := "||"
++                                     val cs = map Values.value2circuit vs
++                                in   Compose.par cs
+                                 end,
+-                                popFun name)
++                                State.popFun name)
+                   )
+ 
+-  | exp2value name env (Select (e,es))
++  | exp2value name env (Rubytype.Select (e,es))
+         = let  val v = exp2value name env e
+-               val dummy = CurrentPrim := "SELECT"
+-               val n = value2nat v
++               val dummy = State.CurrentPrim := "SELECT"
++               val n = Values.value2nat v
+           in   if    n >= length es
+-               then  def_error "not enough elements to select from"
++               then  Errors.def_error "not enough elements to select from"
+                else  exp2value name env (List.nth (es,n))
+           end
+ 
+-  | exp2value name env (App (f,es))
++  | exp2value name env (Rubytype.App (f,es))
+         = let  val vs = map (exp2value name env) es
+                val f' = env f
+-               val (v,leftover) = apply (f',vs)
++               val (v,leftover) = Values.apply (f',vs)
+           in   if    null leftover
+                then  v
+-               else  def_error ("\""^f^"\" applied to too many arguments")
++               else  Errors.def_error ("\""^f^"\" applied to too many arguments")
+           end
+ 
+-  | exp2value name env (Rel (pos,vars,a1,a2))
+-        = let  val id = Wiring (VAR "x", VAR "x")
+-               fun forget f z = f (z, Wiring (VAR "x", VAR "y"))
+-               fun separate f (aVAR(v))    =
+-		   if (elem v vars)
+-                   then (id, VAR (v))
+-                   else (forget f (Var (v)), CONST (BOOL (false)))
+-                 | separate f (aCONST(k))  = (id, CONST (k))
+-                 | separate f (aPROD(aps)) = 
+-                     let val (funcs, wires) = unzip (map (separate f) aps)
+-                     in  (Par (funcs), PROD (wires))
++  | exp2value name env (Rubytype.Rel (pos,vars,a1,a2))
++        = let  val id = Rubytype.Wiring (Rubytype.VAR "x", Rubytype.VAR "x")
++               fun forget f z = f (z, Rubytype.Wiring (Rubytype.VAR "x", Rubytype.VAR "y"))
++               fun separate f (Rubytype.aVAR(v))    =
++		   if (Utilities.elem v vars)
++                   then (id, Rubytype.VAR (v))
++                   else (forget f (Rubytype.Var (v)), Rubytype.CONST (Rubytype.BOOL (false)))
++                 | separate f (Rubytype.aCONST(k))  = (id, Rubytype.CONST (k))
++                 | separate f (Rubytype.aPROD(aps)) = 
++                     let val (funcs, wires) = Utilities.unzip (map (separate f) aps)
++                     in  (Rubytype.Par (funcs), Rubytype.PROD (wires))
+                      end
+-		 | separate f (aAPP(e1,a)) =
++		 | separate f (Rubytype.aAPP(e1,a)) =
+ 		     let val (e2, wire)  = separate f a
+ 		     in  (f (e1, e2), wire)
+                      end
+                val (left, left_wire)   = 
+                      separate 
+-                       (fn (e1, e2) => Seq (pos, App ("^~1", [e1]), e2))
++                       (fn (e1, e2) => Rubytype.Seq (pos, Rubytype.App ("^~1", [e1]), e2))
+                        a1
+                val (right, right_wire) = 
+                      separate 
+-                       (fn (e1, e2) => Seq (pos, e2, e1))
++                       (fn (e1, e2) => Rubytype.Seq (pos, e2, e1))
+                        a2
+-	       val wire                = Wiring (left_wire, right_wire)
++	       val wire                = Rubytype.Wiring (left_wire, right_wire)
+           in
+-               exp2value name env (Seq (pos, (Seq (pos, left, wire)), right))
++               exp2value name env (Rubytype.Seq (pos, (Rubytype.Seq (pos, left, wire)), right))
+           end
+ 
+ (**************************************************************************)
+diff -r 9c58b1a8a60b compiler/compose.sml
+--- a/compiler/compose.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/compose.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -8,8 +8,8 @@
+ 
+ structure Compose :
+   sig
+-        val par : circuit list -> circuit
+-        val seq : (circuit * circuit) -> circuit
++        val par : Circuittype.circuit list -> Circuittype.circuit
++        val seq : (Circuittype.circuit * Circuittype.circuit) -> Circuittype.circuit
+   end =
+ struct
+ 
+@@ -28,7 +28,14 @@
+                                      in   (dom::doms, ran::rans, rel@rels)
+                                      end
+                   val (ds, rs, relation) = par' ps
+-             in   (list ds, list rs, relation)
++             in   
++			 (* (list ds, list rs, relation)   (*orig*) *)
++             (* (ds, rs, relation) (* type error *)  *)
++			 (* tjt, Jan 2014: following passes type checking 
++			  * note need to make refs from values by using ref (value)
++			 (ref (Circuittype.LIST ds), ref (Circuittype.LIST rs), relation)
++			  *)
++			  (Exprs.list ds, Exprs.list rs, relation)   (* as above: just needed module name *) 
+              end
+ 
+ (**************************************************************************)
+@@ -64,47 +71,50 @@
+       (* tjt97 - add code for each case of CON
+ 	   probably needed because REAL is no longer an equality type!
+ 	   see http://www.smlnj.org/doc/Conversion/types.html
+-      (CON a,  CON b)           => if    a=b
++	   (yes, I know that comparing reals is not always a good idea, but
++	   making reals somehow non-comparable is silly even by the standards of
++	   functional-programming zealots)
++      (Circuittype.CON a,  Circuittype.CON b)           => if    a=b
+                                    then  ()
+-                                   else  seq_error "unequal constants joined"
++                                   else  Errors.seq_error "unequal constants joined"
+ 								   *)
+-       (CON (BOOL a),  CON (BOOL b))           => if    a=b
++       (Circuittype.CON (Rubytype.BOOL a),  Circuittype.CON (Rubytype.BOOL b))           => if    a=b
+                                    then  ()
+-                                   else  seq_error "unequal constants joined"
+-    |  (CON (INT a),  CON (INT b))           => if    a=b
++                                   else  Errors.seq_error "unequal constants joined"
++    |  (Circuittype.CON (Rubytype.INT a),  Circuittype.CON (Rubytype.INT b))           => if    a=b
+                                    then  ()
+-                                   else  seq_error "unequal constants joined"
+-    |  (CON (REAL a),  CON (REAL b))           => if    Real.==(a,b)
++                                   else  Errors.seq_error "unequal constants joined"
++    |  (Circuittype.CON (Rubytype.REAL a),  Circuittype.CON (Rubytype.REAL b))           => if    Real.==(a,b)
+                                    then  ()
+-                                   else  seq_error "unequal constants joined"
+-    |  (CON (SYM a),  CON (SYM b))           => if    a=b
++                                   else  Errors.seq_error "unequal constants joined"
++    |  (Circuittype.CON (Rubytype.SYM a),  Circuittype.CON (Rubytype.SYM b))           => if    a=b
+                                    then  ()
+-                                   else  seq_error "unequal constants joined"
+-    | (CON _,  WIRE (OUT,_,_))  => seq_error "constant joined to output"
+-    | (CON _,  WIRE _)          => y :== x
+-    | (CON _,  LIST _)          => seq_error "constant joined to tuple"
++                                   else  Errors.seq_error "unequal constants joined"
++    | (Circuittype.CON _,  Circuittype.WIRE (Circuittype.OUT,_,_))  => Errors.seq_error "constant joined to output"
++    | (Circuittype.CON _,  Circuittype.WIRE _)          => y :== x
++    | (Circuittype.CON _,  Circuittype.LIST _)          => Errors.seq_error "constant joined to tuple"
+ 
+-    | (WIRE (OUT, _,_), CON _)  => seq_error "output joined to constant"
+-    | (WIRE _,          CON _)  => x :== y
++    | (Circuittype.WIRE (Circuittype.OUT, _,_), Circuittype.CON _)  => Errors.seq_error "output joined to constant"
++    | (Circuittype.WIRE _,          Circuittype.CON _)  => x :== y
+ 
+-    | (WIRE (OUT, _,_), WIRE (OUT, _,_))  => seq_error "output wires joined"
+-    | (WIRE (OUT, _,_), WIRE _)           => y :== x
+-    | (WIRE (IN,  _,_), WIRE (OUT, _,_))  => x :== y
+-    | (WIRE (IN,  _,_), WIRE _)           => y :== x
+-    | (WIRE (POLY,_,e), _)                => x :== y
+-    | (WIRE _,          LIST _)           => seq_error
++    | (Circuittype.WIRE (Circuittype.OUT, _,_), Circuittype.WIRE (Circuittype.OUT, _,_))  => Errors.seq_error "output wires joined"
++    | (Circuittype.WIRE (Circuittype.OUT, _,_), Circuittype.WIRE _)           => y :== x
++    | (Circuittype.WIRE (Circuittype.IN,  _,_), Circuittype.WIRE (Circuittype.OUT, _,_))  => x :== y
++    | (Circuittype.WIRE (Circuittype.IN,  _,_), Circuittype.WIRE _)           => y :== x
++    | (Circuittype.WIRE (Circuittype.POLY,_,e), _)                => x :== y
++    | (Circuittype.WIRE _,          Circuittype.LIST _)           => Errors.seq_error
+                                             "single wire joined to tuple"
+ 
+-    | (LIST _,  CON _)            => seq_error "tuple joined to constant"
+-    | (LIST _,  WIRE (POLY,_,e))  => y :== x
+-    | (LIST _,  WIRE _)           => seq_error "tuple joined to single wire"
+-    | (LIST xs, LIST ys)          => if    length xs = length ys
+-                                     then  app unify (zip (xs, ys))
+-                                     else  seq_error
++    | (Circuittype.LIST _,  Circuittype.CON _)            => Errors.seq_error "tuple joined to constant"
++    | (Circuittype.LIST _,  Circuittype.WIRE (Circuittype.POLY,_,e))  => y :== x
++    | (Circuittype.LIST _,  Circuittype.WIRE _)           => Errors.seq_error "tuple joined to single wire"
++    | (Circuittype.LIST xs, Circuittype.LIST ys)          => if    length xs = length ys
++                                     then  app unify (ListPair.zip (xs, ys))
++                                     else  Errors.seq_error
+                                            "wires of unequal widths joined"
+ 
+-    | (EXPR e, _)       => unify (e, y)
+-    | (_,      EXPR e)  => unify (x, e)
++    | (Circuittype.EXPR e, _)       => unify (e, y)
++    | (_,      Circuittype.EXPR e)  => unify (x, e)
+    )
+ 
+ (**************************************************************************)
+@@ -124,25 +134,25 @@
+ and x :== y = let  fun inexpr y = if   x=y
+                                   then true
+                                   else inexprtype (!y)
+-                   and inexprtype (LIST es)     = List.exists inexpr es
+-                     | inexprtype (EXPR e)      = inexpr e
++                   and inexprtype (Circuittype.LIST es)     = List.exists inexpr es
++                     | inexprtype (Circuittype.EXPR e)      = inexpr e
+                      | inexprtype _             = false
+               in   if    inexpr y
+-                   then  seq_error "incompatable wires joined"
+-                   else  let  val xends = endCount x
++                   then  Errors.seq_error "incompatable wires joined"
++                   else  let  val xends = Exprs.endCount x
+                               val dummy = addToEndCount (xends-2) y
+-                         in   x := EXPR y
++                         in   x := Circuittype.EXPR y
+                          end
+               end
+ 
+ and addToEndCount n e
+         = (case !e of
+-             CON _                => ()
+-           | WIRE (dir,name,ends) => if    dir=IN andalso ends+n=0
+-                                     then  seq_error "undriven input wire"
+-                                     else  e := WIRE (dir, name, ends+n)
+-           | LIST es              => app (addToEndCount n) es
+-           | EXPR x               => addToEndCount n x
++             Circuittype.CON _                => ()
++           | Circuittype.WIRE (dir,name,ends) => if    dir=Circuittype.IN andalso ends+n=0
++                                     then  Errors.seq_error "undriven input wire"
++                                     else  e := Circuittype.WIRE (dir, name, ends+n)
++           | Circuittype.LIST es              => app (addToEndCount n) es
++           | Circuittype.EXPR x               => addToEndCount n x
+           )
+ 
+ (**************************************************************************)
+diff -r 9c58b1a8a60b compiler/data.sml
+--- a/compiler/data.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/data.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -12,17 +12,17 @@
+ 
+         val DATA_blk_clk        : string ref;
+         val DATA_blk_clk_ena    : string ref;
+-        val DATA_blk_domain_io  : io ref;
+-        val DATA_blk_range_io   : io ref;
++        val DATA_blk_domain_io  : Rubytype.io ref;
++        val DATA_blk_range_io   : Rubytype.io ref;
+ 
+         val DATA_xnf_clk        : string ref;
+         val DATA_xnf_clk_ena    : string ref;
+         val DATA_xnf_out_ena    : string ref;
+-        val DATA_xnf_domain_io  : io ref;
+-        val DATA_xnf_range_io   : io ref;
++        val DATA_xnf_domain_io  : Rubytype.io ref;
++        val DATA_xnf_range_io   : Rubytype.io ref;
+         val DATA_xnf_header     : string ref;
+ 
+-        val recordData  : (string*io) -> unit
++        val recordData  : (string*Rubytype.io) -> unit
+   end =
+ struct
+ 
+@@ -33,19 +33,19 @@
+ 
+ val DATA_blk_clk        = ref "ruby_clk";
+ val DATA_blk_clk_ena    = ref "ruby_clk_ena";
+-val DATA_blk_domain_io  = ref (PROD []);
+-val DATA_blk_range_io   = ref (PROD []);
++val DATA_blk_domain_io  = ref (Rubytype.PROD []);
++val DATA_blk_range_io   = ref (Rubytype.PROD []);
+ 
+ val DATA_xnf_clk        = ref "ruby_clk";
+ val DATA_xnf_clk_ena    = ref "";
+ val DATA_xnf_out_ena    = ref "";
+-val DATA_xnf_domain_io  = ref (PROD []);
+-val DATA_xnf_range_io   = ref (PROD []);
++val DATA_xnf_domain_io  = ref (Rubytype.PROD []);
++val DATA_xnf_range_io   = ref (Rubytype.PROD []);
+ val DATA_xnf_header     = ref "rubyinclude.xnf";
+ 
+-fun name d (CONST (SYM s))      = s
+-  | name d (VAR s)              = s
+-  | name d e                    = simple_error ("inappropriate value for " ^ d)
++fun name d (Rubytype.CONST (Rubytype.SYM s))      = s
++  | name d (Rubytype.VAR s)              = s
++  | name d e                    = Errors.simple_error ("inappropriate value for " ^ d)
+ 
+ fun recordData ("&alx_clk",       e)
+         = DATA_alx_clk := name "&alx_clk" e
+@@ -72,7 +72,7 @@
+   | recordData ("&xnf_header",    e)
+         = DATA_xnf_header    := name "&xnf_header" e
+   | recordData (x,                e)
+-        = simple_error (x ^ " is not a known data name")
++        = Errors.simple_error (x ^ " is not a known data name")
+ 
+ (**************************************************************************)
+ (**************************************************************************)
+diff -r 9c58b1a8a60b compiler/exprs.sml
+--- a/compiler/exprs.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/exprs.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -11,20 +11,21 @@
+         val MonoWireCount : int ref
+         val PolyWireCount : int ref
+ 
+-        val con         : const      -> expr
+-        val monoIn      : int        -> expr
+-        val monoOut     : int        -> expr
+-        val poly        : int        -> expr
+-        val monoInList  : int -> int -> expr list
+-        val monoOutList : int -> int -> expr list
+-        val polyList    : int -> int -> expr list
+-        val list        : expr list  -> expr
++(* tjt, Jan 2014: const => Rubytype.const, expr => Circuittype.expr *)
++        val con         : Rubytype.const      -> Circuittype.expr
++        val monoIn      : int        -> Circuittype.expr
++        val monoOut     : int        -> Circuittype.expr
++        val poly        : int        -> Circuittype.expr
++        val monoInList  : int -> int -> Circuittype.expr list
++        val monoOutList : int -> int -> Circuittype.expr list
++        val polyList    : int -> int -> Circuittype.expr list
++        val list        : Circuittype.expr list  -> Circuittype.expr
+ 
+-        val exprInputs  : expr -> int list
+-        val exprOutputs : expr -> int list
+-        val exprWires   : expr -> expr list
+-        val flattenExpr : expr -> exprtype list
+-        val endCount    : expr -> int
++        val exprInputs  : Circuittype.expr -> int list
++        val exprOutputs : Circuittype.expr -> int list
++        val exprWires   : Circuittype.expr -> Circuittype.expr list
++        val flattenExpr : Circuittype.expr -> Circuittype.exprtype list
++        val endCount    : Circuittype.expr -> int
+ 
+   end =
+ struct
+@@ -45,17 +46,20 @@
+ fun nextPolyName () = (PolyWireCount := 1 + !PolyWireCount;
+                        !PolyWireCount)
+ 
+-fun con k      = ref (CON k)
++(* tjt, Jan 2014 *)
++fun con k      = ref (Circuittype.CON k)
+ 
+-fun monoIn  ends = ref (WIRE (IN,   nextMonoName(), ends))
+-fun monoOut ends = ref (WIRE (OUT,  nextMonoName(), ends))
+-fun poly    ends = ref (WIRE (POLY, nextPolyName(), ends))
++(* tjt, Jan 2014 *)
++fun monoIn  ends = ref (Circuittype.WIRE (Circuittype.IN,   nextMonoName(), ends))
++fun monoOut ends = ref (Circuittype.WIRE (Circuittype.OUT,  nextMonoName(), ends))
++fun poly    ends = ref (Circuittype.WIRE (Circuittype.POLY, nextPolyName(), ends))
+ 
+-fun monoInList  ends n = for (1, n) (fn x => monoIn  ends)
+-fun monoOutList ends n = for (1, n) (fn x => monoOut ends)
+-fun polyList    ends n = for (1, n) (fn x => poly    ends)
++(* tjt, Jan 2014 *)
++fun monoInList  ends n = Utilities.for (1, n) (fn x => monoIn  ends)
++fun monoOutList ends n = Utilities.for (1, n) (fn x => monoOut ends)
++fun polyList    ends n = Utilities.for (1, n) (fn x => poly    ends)
+ 
+-fun list es    = ref (LIST es)
++fun list es    = ref (Circuittype.LIST es)
+ 
+ (**************************************************************************)
+ (**************************************************************************)
+@@ -64,32 +68,36 @@
+ (***                                                                    ***)
+ (**************************************************************************)
+ 
++(* tjt, Jan 2014 *)
+ fun exprInputs e
+         = (case !e of
+-             CON _             => []
+-           | WIRE (IN,  i,_)   => [i]
+-           | WIRE (OUT, _,_)   => []
+-           | WIRE (POLY,i,_)   => [i]
+-           | LIST es           => flatmap exprInputs es
+-           | EXPR x            => exprInputs x
++(* tjt, Jan 2014 *)
++             Circuittype.CON _             => []
++           | Circuittype.WIRE (Circuittype.IN,  i,_)   => [i]
++           | Circuittype.WIRE (Circuittype.OUT, _,_)   => []
++           | Circuittype.WIRE (Circuittype.POLY,i,_)   => [i]
++           | Circuittype.LIST es           => Utilities.flatmap exprInputs es
++           | Circuittype.EXPR x            => exprInputs x
+           )
+ 
+ fun exprOutputs e
+         = (case !e of
+-             CON _             => []
+-           | WIRE (IN,  _,_)   => []
+-           | WIRE (OUT, i,_)   => [i]
+-           | WIRE (POLY,_,_)   => []
+-           | LIST es           => flatmap exprOutputs es
+-           | EXPR x            => exprOutputs x
++(* tjt, Jan 2014 *)
++             Circuittype.CON _             => []
++           | Circuittype.WIRE (Circuittype.IN,  _,_)   => []
++           | Circuittype.WIRE (Circuittype.OUT, i,_)   => [i]
++           | Circuittype.WIRE (Circuittype.POLY,_,_)   => []
++           | Circuittype.LIST es           => Utilities.flatmap exprOutputs es
++           | Circuittype.EXPR x            => exprOutputs x
+           )
+ 
+ fun exprWires e
+         = (case !e of
+-             CON _             => []
+-           | WIRE _            => [e]
+-           | LIST es           => flatmap exprWires es
+-           | EXPR x            => exprWires x
++(* tjt, Jan 2014 *)
++             Circuittype.CON _             => []
++           | Circuittype.WIRE _            => [e]
++           | Circuittype.LIST es           => Utilities.flatmap exprWires es
++           | Circuittype.EXPR x            => exprWires x
+           )
+ 
+ (**************************************************************************)
+@@ -101,8 +109,9 @@
+ (**************************************************************************)
+ 
+ fun flattenExpr e = (case !e of
+-                       LIST es  => flatmap flattenExpr es
+-                     | EXPR x   => flattenExpr x
++(* tjt, Jan 2014 *)
++                       Circuittype.LIST es  => Utilities.flatmap flattenExpr es
++                     | Circuittype.EXPR x   => flattenExpr x
+                      | x        => [x]
+                     )
+ 
+@@ -114,10 +123,11 @@
+ (**************************************************************************)
+ 
+ fun endCount e = (case !e of
+-                    CON _        => 0
+-                  | WIRE (_,_,e) => e
+-                  | LIST es      => sum (map endCount es)
+-                  | EXPR x       => endCount x
++                    Circuittype.CON _        => 0
++                  | Circuittype.WIRE (_,_,e) => e
++(* tjt, Jan 2014 *)
++                  | Circuittype.LIST es      => Utilities.sum (map endCount es)
++                  | Circuittype.EXPR x       => endCount x
+                  )
+ 
+ (**************************************************************************)
+diff -r 9c58b1a8a60b compiler/ioAlias.sml
+--- a/compiler/ioAlias.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/ioAlias.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -9,7 +9,7 @@
+ 
+ structure IoAlias :
+   sig
+-        val ioAlias : (string * expr * io) -> (exprtype*io) list
++        val ioAlias : (string * Circuittype.expr * Rubytype.io) -> (Circuittype.exprtype*Rubytype.io) list
+   end =
+ struct
+ 
+@@ -23,7 +23,7 @@
+ (**************************************************************************)
+ 
+ 
+-fun ioAlias (i, e, PROD []) = []
++fun ioAlias (i, e, Rubytype.PROD []) = []
+   | ioAlias (i, e, io)      = ioAliases i (!e, io)
+ 
+ and ioAliases i (w, io)
+@@ -31,45 +31,45 @@
+ 	     (* tjt97 - reals again 
+          (CON d1,  CONST d2) => if    d1=d2
+                                 then  []
+-                                else  simple_error ("cannot connect " ^
+-                                                    showConst d1 ^ " to " ^
+-                                                    showConst d2 ^ " in &" ^
++                                else  Errors.simple_error ("cannot connect " ^
++                                                    Show.showConst d1 ^ " to " ^
++                                                    Show.showConst d2 ^ " in &" ^
+                                                     i ^ "_io")
+ 													*)
+-         (CON (BOOL d1),  CONST (BOOL d2)) => if    d1=d2
++         (Circuittype.CON (Rubytype.BOOL d1),  Rubytype.CONST (Rubytype.BOOL d2)) => if    d1=d2
+                                 then  []
+-                                else  simple_error ("cannot connect " ^
+-                                                    showConst (BOOL d1) ^ " to " ^
+-                                                    showConst (BOOL d2) ^ " in &" ^
++                                else  Errors.simple_error ("cannot connect " ^
++                                                    Show.showConst (Rubytype.BOOL d1) ^ " to " ^
++                                                    Show.showConst (Rubytype.BOOL d2) ^ " in &" ^
+                                                     i ^ "_io")
+-       | (CON (INT d1),  CONST (INT d2)) => if    d1=d2
++       | (Circuittype.CON (Rubytype.INT d1),  Rubytype.CONST (Rubytype.INT d2)) => if    d1=d2
+                                 then  []
+-                                else  simple_error ("cannot connect " ^
+-                                                    showConst (INT d1) ^ " to " ^
+-                                                    showConst (INT d2) ^ " in &" ^
++                                else  Errors.simple_error ("cannot connect " ^
++                                                    Show.showConst (Rubytype.INT d1) ^ " to " ^
++                                                    Show.showConst (Rubytype.INT d2) ^ " in &" ^
+                                                     i ^ "_io")
+-       | (CON (REAL d1),  CONST (REAL d2)) => if    Real.==(d1,d2)
++       | (Circuittype.CON (Rubytype.REAL d1),  Rubytype.CONST (Rubytype.REAL d2)) => if    Real.==(d1,d2)
+                                 then  []
+-                                else  simple_error ("cannot connect " ^
+-                                                    showConst (REAL d1) ^ " to " ^
+-                                                    showConst (REAL d2) ^ " in &" ^
++                                else  Errors.simple_error ("cannot connect " ^
++                                                    Show.showConst (Rubytype.REAL d1) ^ " to " ^
++                                                    Show.showConst (Rubytype.REAL d2) ^ " in &" ^
+                                                     i ^ "_io")
+-       | (CON (SYM d1),  CONST (SYM d2)) => if    d1=d2
++       | (Circuittype.CON (Rubytype.SYM d1),  Rubytype.CONST (Rubytype.SYM d2)) => if    d1=d2
+                                 then  []
+-                                else  simple_error ("cannot connect " ^
+-                                                    showConst (SYM d1) ^ " to " ^
+-                                                    showConst (SYM d2) ^ " in &" ^
++                                else  Errors.simple_error ("cannot connect " ^
++                                                    Show.showConst (Rubytype.SYM d1) ^ " to " ^
++                                                    Show.showConst (Rubytype.SYM d2) ^ " in &" ^
+                                                     i ^ "_io")
+-       | (CON _,   VAR _)    => [(w, io)]
+-       | (WIRE _,  VAR _)    => [(w, io)]
+-       | (WIRE _,  CONST _)  => [(w, io)]
+-       | (LIST es, PROD ios) => if    length es = length ios
+-                                then  flatmap (ioAliases i)
+-                                              (zip (map (!) es, ios))
+-                                else  simple_error ("cannot match " ^ i ^
++       | (Circuittype.CON _,   Rubytype.VAR _)    => [(w, io)]
++       | (Circuittype.WIRE _,  Rubytype.VAR _)    => [(w, io)]
++       | (Circuittype.WIRE _,  Rubytype.CONST _)  => [(w, io)]
++       | (Circuittype.LIST es, Rubytype.PROD ios) => if    length es = length ios
++                                then  Utilities.flatmap (ioAliases i)
++                                              (Utilities.zip (map (!) es, ios))
++                                else  Errors.simple_error ("cannot match " ^ i ^
+                                                     " to &" ^ i ^ "_io")
+-       | (EXPR x,  _)        => ioAliases i (!x, io)
+-       | (_,       _)        => simple_error ("cannot match " ^ i ^
++       | (Circuittype.EXPR x,  _)        => ioAliases i (!x, io)
++       | (_,       _)        => Errors.simple_error ("cannot match " ^ i ^
+                                               " to &" ^ i ^ "_io")
+       )
+ 
+diff -r 9c58b1a8a60b compiler/ios.sml
+--- a/compiler/ios.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/ios.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -8,7 +8,8 @@
+ 
+ structure Ios:
+   sig
+-        val iovars : io -> string list
++        (* tjt, Jan 2014: io => Rubytype.io*)
++        val iovars : Rubytype.io -> string list
+   end =
+ struct
+ 
+@@ -20,8 +21,9 @@
+ (***                                                                    ***)
+ (**************************************************************************)
+ 
+-fun iovars (VAR x)   = [x]
+-  | iovars (PROD ws) = flatmap iovars ws
++(* tjt, Jan 2014: Rubytype, Utilities *)
++fun iovars (Rubytype.VAR x)   = [x]
++  | iovars (Rubytype.PROD ws) = Utilities.flatmap iovars ws
+   | iovars _         = []
+ 
+ (**************************************************************************)
+diff -r 9c58b1a8a60b compiler/main.sml
+--- a/compiler/main.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/main.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -43,55 +43,55 @@
+ (**************************************************************************)
+ (***    parse the toplevel file into defs:                              ***)
+ 
+-= let  val defs = (SourceFiles := [file];
++= let  val defs = (State.SourceFiles := [file];
+                    ruby.parse file)
+ 
+ (**************************************************************************)
+ (***    find the current name:                                          ***)
+ 
+-       fun firstDefName [] = simple_error ("no current name found in " ^ file)
+-         | firstDefName (Fdefn (f,_,_)::ds) = f
++       fun firstDefName [] = Errors.simple_error ("no current name found in " ^ file)
++         | firstDefName (Rubytype.Fdefn (f,_,_)::ds) = f
+          | firstDefName (_            ::ds) = firstDefName ds        
+        val current = firstDefName defs
+ 
+ (**************************************************************************)
+ (***    compile toplevel file into symbol tables:                       ***)
+ 
+-       val dummy = app storeDef defs
++       val dummy = app CompileDef.storeDef defs
+ 
+ (**************************************************************************)
+ (***    compile all "include" files into symbol tables:                 ***)
+ 
+-       val dummy = while  not (null (!IncludeFiles))
+-                   do     let  val incl = hd (!IncludeFiles)
+-                          in   IncludeFiles := tl (!IncludeFiles);
+-                               if    notElem incl (!SourceFiles)
+-                               then  (SourceFiles := incl :: (!SourceFiles);
+-                                      app storeDef (ruby.parse incl))
++       val dummy = while  not (null (!State.IncludeFiles))
++                   do     let  val incl = hd (!State.IncludeFiles)
++                          in   State.IncludeFiles := tl (!State.IncludeFiles);
++                               if    Utilities.notElem incl (!State.SourceFiles)
++                               then  (State.SourceFiles := incl :: (!State.SourceFiles);
++                                      app CompileDef.storeDef (ruby.parse incl))
+                                else  ()
+                           end
+ 
+ (**************************************************************************)
+ (***    find the value of the current name:                             ***)
+ 
+-       val dummy = CurrentPrim := "rc"
+-       val currentValue = globalDef current
++       val dummy = State.CurrentPrim := "rc"
++       val currentValue = CompileDef.globalDef current
+ 
+ (**************************************************************************)
+ (***    generate a circuit from the current name:                       ***)
+ 
+-       val circuit = value2circuit currentValue
++       val circuit = Values.value2circuit currentValue
+ 
+ (**************************************************************************)
+ (***    organise the gates into parallel blocks:                        ***)
+ 
+-       val pcircuit = circuit2pcircuit circuit
++       val pcircuit = Order.circuit2pcircuit circuit
+ 
+ (**************************************************************************)
+ (***    write the rbs version of the pcircuit:                          ***)
+ 
+        val outfile = TextIO.openOut (current^".rbs")
+-       val dummy = TextIO.output (outfile, showRBS pcircuit)
++       val dummy = TextIO.output (outfile, Printrbs.showRBS pcircuit)
+        val dummy = TextIO.closeOut outfile
+ 
+ (**************************************************************************)
+@@ -99,28 +99,28 @@
+ 
+   in   if    !genALX
+        then  let  val outfile = TextIO.openOut (current^".cfg")
+-             in   (TextIO.output (outfile, showALX current pcircuit);
++             in   (TextIO.output (outfile, Printalx.showALX current pcircuit);
+                    TextIO.closeOut outfile)
+              end
+        else  ();
+ 
+        if    !genBLK
+        then  let  val outfile = TextIO.openOut (current^".blk")
+-             in   (TextIO.output (outfile, showBLK pcircuit);
++             in   (TextIO.output (outfile, Printblk.showBLK pcircuit);
+                    TextIO.closeOut outfile)
+              end
+        else  ();
+ 
+        if    !genEDF
+        then  let  val outfile = TextIO.openOut (current^".edn")
+-             in   (TextIO.output (outfile, showEDF pcircuit);
++             in   (TextIO.output (outfile, Printedf.showEDF pcircuit);
+                    TextIO.closeOut outfile)
+              end
+        else  ();
+ 
+        if    !genVHD
+        then  let  val outfile = TextIO.openOut (current^".vhd")
+-             in   (TextIO.output (outfile, printVHDL pcircuit);
++             in   (TextIO.output (outfile, PrintVhdl.printVHDL pcircuit);
+                    TextIO.closeOut outfile)
+              end
+        else  ();
+@@ -128,7 +128,7 @@
+ 	  (* tjt: Verilog *)
+ 	   if    !genVLG
+        then  let  val outfile = TextIO.openOut (current^".v")
+-             in   (TextIO.output (outfile, printVerilog pcircuit);
++             in   (TextIO.output (outfile, PrintVerilog.printVerilog pcircuit);
+                    TextIO.closeOut outfile)
+              end
+        else  ();
+@@ -136,7 +136,7 @@
+ 		(* tjt: Maxeler MaxJ *)
+ 	   if    !genMAX
+        then  let  val outfile = TextIO.openOut (current^".maxj")
+-             in   (TextIO.output (outfile, showMax pcircuit);
++             in   (TextIO.output (outfile, PrintMax.showMax pcircuit);
+                    TextIO.closeOut outfile)
+              end
+        else  ();
+@@ -144,7 +144,7 @@
+ 
+        if    !genXNF
+        then  let  val outfile = TextIO.openOut (current^".xnf")
+-             in   (TextIO.output (outfile, showXNF pcircuit);
++             in   (TextIO.output (outfile, Printxnf.showXNF pcircuit);
+                    TextIO.closeOut outfile)
+              end
+        else  ()
+@@ -165,12 +165,12 @@
+ fun rcHandle (argv, envp)
+         = let  fun isFlag x = str (hd (explode x)) = "-"
+                (* was
+-			   val flags = filter isFlag argv *)
+-               val flags = filter isFlag envp
+-               val flags' = filter (fn c => c<>("-")) (map str (flatmap explode flags))
++			   val flags = Utilities.filter isFlag argv *)
++               val flags = Utilities.filter isFlag envp
++               val flags' = Utilities.filter (fn c => c<>("-")) (map str (Utilities.flatmap explode flags))
+ 			   (* was
+-               val files = filter (not o isFlag) argv *)
+-               val files = filter (not o isFlag) envp
++               val files = Utilities.filter (not o isFlag) argv *)
++               val files = Utilities.filter (not o isFlag) envp
+                fun setFlag "a" = genALX := true
+                  | setFlag "b" = genBLK := true
+                  | setFlag "x" = genXNF := true
+@@ -179,16 +179,16 @@
+                  | setFlag "l" = genVLG := true
+                  | setFlag "e" = genEDF := true
+                  | setFlag "m" = genMAX := true
+-                 | setFlag  f  = usage_error (f ^ ": unknown flag")
++                 | setFlag  f  = Errors.usage_error (f ^ ": unknown flag")
+ 
+           in   if    length files <> 1  (* tjt97: was 2: first one is no longer command name *)
+ 		       (* tjt97: was:
+-               then  usage_error ""
++               then  Errors.usage_error ""
+ 			   *)
+                then  (print ("len files = " ^ Int.toString (length files) ^ "\n");
+ 			          print "files = ";
+ 					  map print files;
+-			          usage_error ""
++			          Errors.usage_error ""
+ 			         )
+                else  (
+ 			          print "files = ";
+@@ -202,7 +202,7 @@
+ 					  *)
+                       rcomp (hd files))
+           end
+-          handle ex => TextIO.output (TextIO.stdErr, "\n" ^ message ex ^ "\n\n")
++          handle ex => TextIO.output (TextIO.stdErr, "\n" ^ Messages.message ex ^ "\n\n")
+ 
+ (**************************************************************************)
+ 
+diff -r 9c58b1a8a60b compiler/makefile
+--- a/compiler/makefile	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/makefile	Fri Jan 17 01:24:45 2014 +0000
+@@ -1,5 +1,7 @@
+ # build Ruby compile by scripting sml
+ 
++# Because build seems to need to be run from REPL, we script using expect
++
+ 
+ # define tools to use
+ EXPECT:=expect
+diff -r 9c58b1a8a60b compiler/mappings.sml
+--- a/compiler/mappings.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/mappings.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -17,7 +17,9 @@
+         val pairs2mapping : (''a*'b) list -> (''a,'b) mapping
+         val newTable      : int -> (string,'1a) table
+         val store         : (string,'a) table -> (string*'a) -> unit
+-        val lookup        : (string,'a) table -> string -> 'a maybe
++		(* tjt, Jan 2014: SMLofNJ now seems to need modules to be used explicitly *)
++		(*      maybe => Maybe.maybe *)
++        val lookup        : (string,'a) table -> string -> 'a Maybe.maybe
+   end =
+ struct
+ 
+@@ -66,9 +68,9 @@
+                       end
+ 
+ and lookup tab x = let  val index = hash (Array.length tab) x
+-                   in   success ((Array.sub (tab, index)) x)
++                   in   Maybe.success ((Array.sub (tab, index)) x)
+                    end
+-                   handle Mapping => failure
++                   handle Mapping => Maybe.failure
+ 
+ (**************************************************************************)
+ (**************************************************************************)
+diff -r 9c58b1a8a60b compiler/messages.sml
+--- a/compiler/messages.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/messages.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -17,36 +17,45 @@
+ 
+ (* tjt97 - makestring => Int.toString 
+  * Io => IO.Io, now returns some sort of record
++ *
++ * Jan 2014: TextPosition => Errors.TextPosition
++ *           SourceFiles => State.SourceFiles
+  *)
+-fun showPosition () = let val (l,c) = !TextPosition
++fun showPosition () = let val (l,c) = !Errors.TextPosition
+                       in  ", line " ^ Int.toString l ^ ", column " ^ Int.toString c
+                       end
+ 
+-fun showFile () = " in file \"" ^ hd (!SourceFiles) ^ "\""
++fun showFile () = " in file \"" ^ hd (!State.SourceFiles) ^ "\""
+ 
+-fun showFunctions () = " in " ^ concatWith "->" (rev (!FunStack))
++(* Jan 2014: concatWith => Utilities.concatWith
++ *           FunStack => State.FunStack   (I must get one of those; sounds
++ *                                         great!)
++ *)
++fun showFunctions () = " in " ^ Utilities.concatWith "->" (rev (!State.FunStack))
+ 
+ (**************************************************************************)
+ 
+-fun message (SIMPLE_ERROR s) = "Error: " ^ s
++(* tjt, Jan 2014: SIMPLE_ERROR => Errors.SIMPLE_ERROR, etc. *)
++fun message (Errors.SIMPLE_ERROR s) = "Error: " ^ s
+ 
+-  | message (LEX_ERROR s)    = "Bad character \"" ^ s ^ "\"" ^
++  | message (Errors.LEX_ERROR s)    = "Bad character \"" ^ s ^ "\"" ^
+                                showFile () ^ showPosition ()
+ 
+-  | message (PARSE_ERROR s)  = "Syntax error at \"" ^ s ^ "\"" ^
++  | message (Errors.PARSE_ERROR s)  = "Syntax error at \"" ^ s ^ "\"" ^
+                                showFile () ^ showPosition ()
+ 
+-  | message (SEQ_ERROR s)    = "Sequential composition error" ^
++  | message (Errors.SEQ_ERROR s)    = "Sequential composition error" ^
+                                showFunctions () ^ showPosition () ^
+                                ":\n" ^  s
+ 
+-  | message (DEF_ERROR s)    = "Error" ^ showFunctions () ^ ":\n" ^ s
++  | message (Errors.DEF_ERROR s)    = "Error" ^ showFunctions () ^ ":\n" ^ s
+ 
+-  | message (LOOP_ERROR ds)  = "Unbroken loop error:\n{" ^
+-                               concatWith "," (rev ds) ^
++  | message (Errors.LOOP_ERROR ds)  = "Unbroken loop error:\n{" ^
++                               (* tjt *)
++                               Utilities.concatWith "," (rev ds) ^
+                                "}"
+ 
+-  | message (USAGE_ERROR s)  = s ^ "\nusage: rc [-abxev] file" ^
++  | message (Errors.USAGE_ERROR s)  = s ^ "\nusage: rc [-abxev] file" ^
+ 
+                                    "\n   -a   output a file current.alx for Algotronix's FPGAs" ^
+                                    "\n   -b   output an BLK file current.blk" ^
+diff -r 9c58b1a8a60b compiler/order.sml
+--- a/compiler/order.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/order.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -10,7 +10,7 @@
+ 
+ structure Order :
+   sig
+-        val circuit2pcircuit : circuit -> pcircuit
++        val circuit2pcircuit : Circuittype.circuit -> Circuittype.pcircuit
+   end =
+ struct
+ 
+@@ -21,10 +21,10 @@
+ *)
+ 
+ fun inputs (dev, inputExpr, outputExpr)
+-        = remdups (exprInputs inputExpr)
++        = Utilities.remdups (Exprs.exprInputs inputExpr)
+ 
+ fun outputs (dev, inputExpr, outputExpr)
+-        = remdups (exprOutputs outputExpr)
++        = Utilities.remdups (Exprs.exprOutputs outputExpr)
+ 
+ (**************************************************************************)
+ (***                                                                    ***)
+@@ -36,15 +36,15 @@
+ (***                                                                    ***)
+ (**************************************************************************)
+ 
+-type gateRecord = (gate * int list * int)
++type gateRecord = (Circuittype.gate * int list * int)
+ 
+-val NullRecord = ((NOTHING, list [], list []), [], 0) : gateRecord;
++val NullRecord = ((Circuittype.NOTHING, Exprs.list [], Exprs.list []), [], 0) : gateRecord;
+ 
+ val GateArray = ref (Array.array (0, NullRecord));
+ 
+ fun installGate (g as (dev, inExpr, outExpr))
+-    = let  val ins  = remdups (exprInputs inExpr @ exprOutputs inExpr)
+-           val outs = remdups (exprOutputs outExpr)
++    = let  val ins  = Utilities.remdups (Exprs.exprInputs inExpr @ Exprs.exprOutputs inExpr)
++           val outs = Utilities.remdups (Exprs.exprOutputs outExpr)
+            fun install i = Array.update (!GateArray, i, (g,ins,0))
+       in   app install outs
+       end;
+@@ -60,11 +60,11 @@
+     = if    w=w0
+       then  [[]]
+       else  (case Array.sub (!GateArray, w) of
+-               ((NOTHING,_,_),_,_)   => []
+-             | ((D,      _,_),_,_)   => []
+-             | ((DI _,   _,_),_,_)   => []
++               ((Circuittype.NOTHING,_,_),_,_)   => []
++             | ((Circuittype.D,      _,_),_,_)   => []
++             | ((Circuittype.DI _,   _,_),_,_)   => []
+              | ((dev,_,_),inputs,_)  => map (fn path => dev::path)
+-                                            (flatmap (findLoops w0) inputs)
++                                            (Utilities.flatmap (findLoops w0) inputs)
+       )
+ 
+ (**************************************************************************)
+@@ -77,13 +77,13 @@
+ 
+ fun distance wire
+   = (case Array.sub (!GateArray, wire) of
+-       ((NOTHING,_,_),_,_)   => 0   (* must be an input to the circuit *)
++       ((Circuittype.NOTHING,_,_),_,_)   => 0   (* must be an input to the circuit *)
+ 
+-     | ((D,   _,_),_,_)      => 0   (* output not dependent on any input *)
+-     | ((DI _,_,_),_,_)      => 0
++     | ((Circuittype.D,   _,_),_,_)      => 0   (* output not dependent on any input *)
++     | ((Circuittype.DI _,_,_),_,_)      => 0
+ 
+      | (gate,inputs,0) => (Array.update (!GateArray, wire, (gate,inputs,~1));
+-                           let val dist = 1 + listmax (map distance inputs)
++                           let val dist = 1 + Utilities.listmax (map distance inputs)
+                            in  (Array.update(!GateArray,wire,(gate,inputs,dist));
+                                 if    dist > !MaxDistance
+                                 then  MaxDistance := dist
+@@ -92,8 +92,8 @@
+                            end
+                           )
+ 
+-     | ((dev,_,_),inputs,~1) => loop_error (map showDevice
+-                                 (dev :: hd (flatmap (findLoops wire) inputs)))
++     | ((dev,_,_),inputs,~1) => Errors.loop_error (map Show.showDevice
++                                 (dev :: hd (Utilities.flatmap (findLoops wire) inputs)))
+ 
+      | (_, _, dist)          => dist   (* has already been calculated *)
+     )
+@@ -105,35 +105,35 @@
+ (***                                                                    ***)
+ (**************************************************************************)
+ 
+-val ParBlocks = ref (Array.array (0, [])) : gate list array ref;
++val ParBlocks = ref (Array.array (0, [])) : Circuittype.gate list array ref;
+ 
+ fun assignGateToParBlock wire
+         = (case Array.sub (!GateArray, wire) of
+-             ((NOTHING,_,_),_,_) => ()
++             ((Circuittype.NOTHING,_,_),_,_) => ()
+            | (gate,_,dist)  => Array.update (!ParBlocks,
+                                              dist,
+                                              Array.sub(!ParBlocks,dist)@[gate])
+           )
+ 
+-fun collectPars () = for (1, !MonoWireCount) assignGateToParBlock
++fun collectPars () = Utilities.for (1, !Exprs.MonoWireCount) assignGateToParBlock
+ 
+-fun order gates = (GateArray := Array.array ((!MonoWireCount)+1, NullRecord);
++fun order gates = (GateArray := Array.array ((!Exprs.MonoWireCount)+1, NullRecord);
+                    app installGate gates;
+-                   for (1, !MonoWireCount) distance;
++                   Utilities.for (1, !Exprs.MonoWireCount) distance;
+                    ParBlocks := Array.array ((!MaxDistance)+1, []);
+                    collectPars ();
+ 				   (* tjt97 - do not remove duplicates again
+-                   map remdups (filter (not o null) (array2list (!ParBlocks)))
++                   map Utilities.remdups (filter (not o null) (array2list (!ParBlocks)))
+ 				   *)
+-                   (filter (not o null) (array2list (!ParBlocks)))
++                   (Utilities.filter (not o null) (Utilities.array2list (!ParBlocks)))
+                   )
+ 
+ (**************************************************************************)
+ 
+ fun renameWiresFrom n []
+         = n
+-  | renameWiresFrom n (e::es) = let  val WIRE (dir, name, ends) = !e
+-                                in   (e := WIRE (dir, n, ends);
++  | renameWiresFrom n (e::es) = let  val Circuittype.WIRE (dir, name, ends) = !e
++                                in   (e := Circuittype.WIRE (dir, n, ends);
+                                       renameWiresFrom (n+1) es
+                                      )
+                                 end
+@@ -147,13 +147,13 @@
+ 
+ fun circuit2pcircuit (dom, ran, rel)
+         = let  val rels = order rel
+-               fun gateWires (dev,inExpr,outExpr) = exprWires inExpr @
+-                                                    exprWires outExpr
+-               fun relationWires gates = flatmap gateWires gates
+-               val wires = orderedRemdups (flatmap relationWires rels @
+-                                           exprWires dom @
+-                                           exprWires ran)
+-               val dummy = MonoWireCount := renameWiresFrom 1 wires
++               fun gateWires (dev,inExpr,outExpr) = Exprs.exprWires inExpr @
++                                                    Exprs.exprWires outExpr
++               fun relationWires gates = Utilities.flatmap gateWires gates
++               val wires = Utilities.orderedRemdups (Utilities.flatmap relationWires rels @
++                                           Exprs.exprWires dom @
++                                           Exprs.exprWires ran)
++               val dummy = Exprs.MonoWireCount := renameWiresFrom 1 wires
+           in   (dom, ran, rels)
+           end
+ 
+diff -r 9c58b1a8a60b compiler/primTypes.sml
+--- a/compiler/primTypes.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/primTypes.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -9,22 +9,22 @@
+ 
+ structure PrimTypes :
+   sig
+-        val unary                  : device                 -> value
+-        val binary                 : device                 -> value
+-        val ternary                : device                 -> value
+-        val unary_k                : (const->device)        -> value
+-        val i_ins_one_out          : (int->device)          -> value
+-        val one_in_i_outs          : (int->device)          -> value
+-        val ij_ins_one_out         : ((int*int)->device)    -> value
+-        val one_in_ij_outs         : ((int*int)->device)    -> value
+-        val one_and_i_ins_one_out  : (int->device)          -> value
++        val unary                  : Circuittype.device                 -> Values.value
++        val binary                 : Circuittype.device                 -> Values.value
++        val ternary                : Circuittype.device                 -> Values.value
++        val unary_k                : (Rubytype.const->Circuittype.device)        -> Values.value
++        val i_ins_one_out          : (int->Circuittype.device)          -> Values.value
++        val one_in_i_outs          : (int->Circuittype.device)          -> Values.value
++        val ij_ins_one_out         : ((int*int)->Circuittype.device)    -> Values.value
++        val one_in_ij_outs         : ((int*int)->Circuittype.device)    -> Values.value
++        val one_and_i_ins_one_out  : (int->Circuittype.device)          -> Values.value
+ 
+-        val num_prim               : (const->value)         -> value
+-        val num_num_prim           : ((const*const)->value) -> value
+-        val nat_prim               : (int->value)           -> value
+-        val nat_nat_prim           : ((int*int)->value)     -> value
+-        val int_prim               : (int->value)           -> value
+-        val int_int_prim           : ((int*int)->value)     -> value
++        val num_prim               : (Rubytype.const->Values.value)         -> Values.value
++        val num_num_prim           : ((Rubytype.const*Rubytype.const)->Values.value) -> Values.value
++        val nat_prim               : (int->Values.value)           -> Values.value
++        val nat_nat_prim           : ((int*int)->Values.value)     -> Values.value
++        val int_prim               : (int->Values.value)           -> Values.value
++        val int_int_prim           : ((int*int)->Values.value)     -> Values.value
+   end =
+ struct
+ 
+@@ -37,20 +37,20 @@
+ (***                                                                    ***)
+ (**************************************************************************)
+ 
+-fun unary   dev = CIRCUIT (fn () => let  val ins = monoIn 1
+-                                         val outs = monoOut 1
++fun unary   dev = Values.CIRCUIT (fn () => let  val ins = Exprs.monoIn 1
++                                         val outs = Exprs.monoOut 1
+                                     in   (ins, outs, [(dev,ins,outs)])
+                                     end
+                           )
+ 
+-fun binary  dev = CIRCUIT (fn () => let  val ins = list (monoInList 1 2)
+-                                         val outs = monoOut 1
++fun binary  dev = Values.CIRCUIT (fn () => let  val ins = Exprs.list (Exprs.monoInList 1 2)
++                                         val outs = Exprs.monoOut 1
+                                     in   (ins, outs, [(dev,ins,outs)])
+                                     end
+                           )
+ 
+-fun ternary dev = CIRCUIT (fn () => let  val ins = list (monoInList 1 3)
+-                                         val outs = monoOut 1
++fun ternary dev = Values.CIRCUIT (fn () => let  val ins = Exprs.list (Exprs.monoInList 1 3)
++                                         val outs = Exprs.monoOut 1
+                                     in   (ins, outs, [(dev,ins,outs)])
+                                     end
+                           )
+@@ -62,7 +62,7 @@
+ (***                                                                    ***)
+ (**************************************************************************)
+ 
+-fun unary_k dev = FUNCTION (fn k => unary (dev (value2const k)))
++fun unary_k dev = Values.FUNCTION (fn k => unary (dev (Values.value2const k)))
+ 
+ (**************************************************************************)
+ (***                                                                    ***)
+@@ -71,9 +71,9 @@
+ (**************************************************************************)
+ 
+ fun i_ins_one_out dev
+-  = FUNCTION (fn i => let val i' = value2nat i
+-                      in  CIRCUIT (fn ()=>let  val ins = list (monoInList 1 i')
+-                                               val outs = monoOut 1
++  = Values.FUNCTION (fn i => let val i' = Values.value2nat i
++                      in  Values.CIRCUIT (fn ()=>let  val ins = Exprs.list (Exprs.monoInList 1 i')
++                                               val outs = Exprs.monoOut 1
+                                           in   (ins, outs, [(dev i',ins,outs)])
+                                           end
+                                   )
+@@ -87,13 +87,13 @@
+ (**************************************************************************)
+ 
+ fun ij_ins_one_out dev
+-  = FUNCTION (fn i => 
+-    FUNCTION (fn j => 
+-                   let val i' = value2nat i
+-                       val j' = value2nat j
+-                   in  CIRCUIT (fn ()=>let val ins = list [list (monoInList 1 i'),
+-                                                           list (monoInList 1 j')]
+-                                           val outs = monoOut 1
++  = Values.FUNCTION (fn i => 
++    Values.FUNCTION (fn j => 
++                   let val i' = Values.value2nat i
++                       val j' = Values.value2nat j
++                   in  Values.CIRCUIT (fn ()=>let val ins = Exprs.list [Exprs.list (Exprs.monoInList 1 i'),
++                                                           Exprs.list (Exprs.monoInList 1 j')]
++                                           val outs = Exprs.monoOut 1
+                                        in  (ins, outs, [(dev (i',j'),ins,outs)])
+                                        end
+                                 )
+@@ -103,14 +103,14 @@
+ (**************************************************************************)
+ (***                                                                    ***)
+ (***    This function creates a unary device primitive with i           ***)
+-(***    monomorphic outputs:                                            ***)
++(***    Exprs.monomorphic outputs:                                            ***)
+ (***                                                                    ***)
+ (**************************************************************************)
+ 
+ fun one_in_i_outs dev
+-  = FUNCTION (fn i => let val i' = value2nat i
+-                      in  CIRCUIT (fn ()=>let val ins  = monoIn 1
+-                                              val outs = list(monoOutList 1 i')
++  = Values.FUNCTION (fn i => let val i' = Values.value2nat i
++                      in  Values.CIRCUIT (fn ()=>let val ins  = Exprs.monoIn 1
++                                              val outs = Exprs.list(Exprs.monoOutList 1 i')
+                                           in  (ins, outs, [(dev i',ins,outs)])
+                                           end
+                                   )
+@@ -120,18 +120,18 @@
+ (**************************************************************************)
+ (***                                                                    ***)
+ (***    This function creates a unary device primitive with i and j     ***)
+-(***    monomorphic outputs:                                            ***)
++(***    Exprs.monomorphic outputs:                                            ***)
+ (***                                                                    ***)
+ (**************************************************************************)
+ 
+ fun one_in_ij_outs dev
+-  = FUNCTION (fn i => 
+-    FUNCTION (fn j =>  
+-                  let val i' = value2nat i
+-                      val j' = value2nat j
+-                  in  CIRCUIT (fn ()=>let val ins  = monoIn 1
+-                                          val outs = list [list(monoOutList 1 i'),
+-                                                           list(monoOutList 1 j')]
++  = Values.FUNCTION (fn i => 
++    Values.FUNCTION (fn j =>  
++                  let val i' = Values.value2nat i
++                      val j' = Values.value2nat j
++                  in  Values.CIRCUIT (fn ()=>let val ins  = Exprs.monoIn 1
++                                          val outs = Exprs.list [Exprs.list(Exprs.monoOutList 1 i'),
++                                                           Exprs.list(Exprs.monoOutList 1 j')]
+                                       in  (ins, outs, [(dev (i',j'),ins,outs)])
+                                       end
+                               )
+@@ -141,17 +141,17 @@
+ (**************************************************************************)
+ (***                                                                    ***)
+ (***    This function creates a device primitive with a pair of inputs  ***)
+-(***    (one monomorphic wire, n monomorphic wires) and one monomorphic ***)
++(***    (one Exprs.monomorphic wire, n Exprs.monomorphic wires) and one Exprs.monomorphic ***)
+ (***    output:                                                         ***)
+ (***                                                                    ***)
+ (**************************************************************************)
+ 
+ fun one_and_i_ins_one_out dev
+-  = FUNCTION (
+-      fn i=>let val i' = value2nat i
+-            in  CIRCUIT (fn ()=>let val ins = list [monoIn 1,
+-                                                    list (monoInList 1 i')]
+-                                    val outs = monoOut 1
++  = Values.FUNCTION (
++      fn i=>let val i' = Values.value2nat i
++            in  Values.CIRCUIT (fn ()=>let val ins = Exprs.list [Exprs.monoIn 1,
++                                                    Exprs.list (Exprs.monoInList 1 i')]
++                                    val outs = Exprs.monoOut 1
+                                 in  (ins, outs, [(dev i',ins,outs)])
+                                 end
+                         )
+@@ -173,10 +173,10 @@
+ (***                                                                    ***)
+ (**************************************************************************)
+ 
+-fun num_prim f      = FUNCTION (fn n => f (value2num n))
++fun num_prim f      = Values.FUNCTION (fn n => f (Values.value2num n))
+ 
+-fun num_num_prim f  = FUNCTION (fn n1 =>
+-                      FUNCTION (fn n2 => f (value2num n1, value2num n2)))
++fun num_num_prim f  = Values.FUNCTION (fn n1 =>
++                      Values.FUNCTION (fn n2 => f (Values.value2num n1, Values.value2num n2)))
+ 
+ (**************************************************************************)
+ (***                                                                    ***)
+@@ -184,10 +184,10 @@
+ (***                                                                    ***)
+ (**************************************************************************)
+ 
+-fun nat_prim f     = FUNCTION (fn n => f (value2nat n))
++fun nat_prim f     = Values.FUNCTION (fn n => f (Values.value2nat n))
+ 
+-fun nat_nat_prim f = FUNCTION (fn n1 =>
+-                     FUNCTION (fn n2 => f (value2nat n1, value2nat n2)))
++fun nat_nat_prim f = Values.FUNCTION (fn n1 =>
++                     Values.FUNCTION (fn n2 => f (Values.value2nat n1, Values.value2nat n2)))
+ 
+ (**************************************************************************)
+ (***                                                                    ***)
+@@ -195,10 +195,10 @@
+ (***                                                                    ***)
+ (**************************************************************************)
+ 
+-fun int_prim f     = FUNCTION (fn n => f (value2int n))
++fun int_prim f     = Values.FUNCTION (fn n => f (Values.value2int n))
+ 
+-fun int_int_prim f = FUNCTION (fn n1 =>
+-                     FUNCTION (fn n2 => f (value2int n1, value2int n2)))
++fun int_int_prim f = Values.FUNCTION (fn n1 =>
++                     Values.FUNCTION (fn n2 => f (Values.value2int n1, Values.value2int n2)))
+ 
+ (**************************************************************************)
+ (**************************************************************************)
+diff -r 9c58b1a8a60b compiler/printalx.sml
+--- a/compiler/printalx.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/printalx.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -8,27 +8,27 @@
+ 
+ structure Printalx :
+   sig
+-        val showALX : string -> pcircuit -> string
++        val showALX : string -> Circuittype.pcircuit -> string
+   end =
+ struct
+ 
+ (**************************************************************************)
+ (**************************************************************************)
+ 
+-fun showDev NOT                 = "X1BAR"
+-  | showDev AND                 = "AND"
+-  | showDev OR                  = "OR"
+-  | showDev XOR                 = "XOR"
+-  | showDev NAND                = "NAND"
+-  | showDev NOR                 = "NOR"
+-  | showDev XNOR                = "XNOR"
+-  | showDev (DEVICE d)          = d
+-  | showDev d                   = simple_error ("device \"" ^ showDevice d ^
++fun showDev Circuittype.NOT                 = "X1BAR"
++  | showDev Circuittype.AND                 = "AND"
++  | showDev Circuittype.OR                  = "OR"
++  | showDev Circuittype.XOR                 = "XOR"
++  | showDev Circuittype.NAND                = "NAND"
++  | showDev Circuittype.NOR                 = "NOR"
++  | showDev Circuittype.XNOR                = "XNOR"
++  | showDev (Circuittype.DEVICE d)          = d
++  | showDev d                   = Errors.simple_error ("device \"" ^ Show.showDevice d ^
+                                                 "\" not allowed in ALX format")
+ 
+-val clock = (OUT,0,0)
++val clock = (Circuittype.OUT,0,0)
+ 
+-fun showWire (_,0,_)    = !DATA_alx_clk
++fun showWire (_,0,_)    = !Data.DATA_alx_clk
+   | showWire (_,n,_)    = "ruby_w" ^ Int.toString (n:int)
+ 
+ fun showInput (i,n)     = "\n    X" ^ Int.toString (n:int) ^ "NET " ^ showWire i
+@@ -36,29 +36,29 @@
+ fun showCell ((dev,ins,outs), pos)
+         = let  val pos' = Int.toString (pos:int)
+           in   "  CELL rubycell_" ^ pos' ^ " " ^ pos' ^ " " ^ pos' ^
+-               concatWith "" (map showInput (pairWithIntsFrom 1 ins)) ^
++               Utilities.concatWith "" (map showInput (Utilities.pairWithIntsFrom 1 ins)) ^
+                "\n    SELFNET " ^ showWire (hd outs) ^
+                "\n    FUNCTION " ^
+                 showDev dev ^
+                "\n  ENDCELL\n"
+           end
+ 
+-fun showCells gs = concatWith "" (map showCell (pairWithIntsFrom 0 gs))
++fun showCells gs = Utilities.concatWith "" (map showCell (Utilities.pairWithIntsFrom 0 gs))
+ 
+ fun pairWithDirections []
+         = []
+   | pairWithDirections (w::ws)
+         = let  val dir = (case w of
+-                            (POLY,_,_)  => if    elem w ws
+-                                           then  OUT
+-                                           else  IN
++                            (Circuittype.POLY,_,_)  => if    Utilities.elem w ws
++                                           then  Circuittype.OUT
++                                           else  Circuittype.IN
+                           | (dir ,_,_)  => dir
+                          )
+           in   (w,dir) :: pairWithDirections ws
+           end
+ 
+-fun showDir IN  = "IN"
+-  | showDir OUT = "OUT"
++fun showDir Circuittype.IN  = "IN"
++  | showDir Circuittype.OUT = "OUT"
+ 
+ fun showRport ((w,dir),pos) = "  PORT " ^ showDir dir ^
+                           " " ^ showWire w ^ " " ^
+@@ -69,41 +69,43 @@
+                           Int.toString (pos:int) ^ " WEST"
+ 
+ fun showPorts (ds, rs) = let val drs = rev (pairWithDirections (rev (ds@rs)))
+-                             val ds' = pairWithIntsFrom 0 (take(length ds, drs))
+-                             val rs' = pairWithIntsFrom 0 (drop(length ds, drs))
+-                         in  concatWith "\n" (map showRport rs' @
++                             val ds' = Utilities.pairWithIntsFrom 0 (Utilities.take(length ds, drs))
++                             val rs' = Utilities.pairWithIntsFrom 0 (Utilities.drop(length ds, drs))
++                         in  Utilities.concatWith "\n" (map showRport rs' @
+                                               map showDport ds') ^
+                              "\n  ENDPORTS\n"
+                          end
+ 
+-fun const_error k = simple_error ("constant \"" ^ showConst k ^
++fun const_error k = Errors.simple_error ("constant \"" ^ Show.showConst k ^
+                                   "\" not allowed in ALX format")
+ 
+-fun const2gate (BOOL false) = "ZERO"
+-  | const2gate (BOOL true)  = "ONE"
+-  | const2gate (INT 0)      = "ZERO"
+-  | const2gate (INT 1)      = "ONE"
++fun const2gate (Rubytype.BOOL false) = "ZERO"
++  | const2gate (Rubytype.BOOL true)  = "ONE"
++  | const2gate (Rubytype.INT 0)      = "ZERO"
++  | const2gate (Rubytype.INT 1)      = "ONE"
+   | const2gate k            = const_error k
+ 
+ fun expr2wires e = (case !e of
+-                      CON k    => let  val WIRE w = !(monoOut 0)
+-                                  in   ([w], [(DEVICE (const2gate k), [], [w])])
++                      Circuittype.CON k    => let  val Circuittype.WIRE w = !(Exprs.monoOut 0)
++                                  in   ([w], [(Circuittype.DEVICE (const2gate k), [], [w])])
+                                   end
+-                    | WIRE w   => ([w], [])
+-                    | LIST es  => let  val (ws,cs) = unzip (map expr2wires es)
+-                                  in   (concat ws, concat cs)
++                    | Circuittype.WIRE w   => ([w], [])
++                    | Circuittype.EXPR x   => expr2wires x
++                    | Circuittype.LIST es  => let  val (ws,cs) = Utilities.unzip (map expr2wires es)
++					(* tjt, Jan 2014: note we must use our Utilities.concat,
++					not the standard concat, or ther are type errors *)
++                                  in   (Utilities.concat ws, Utilities.concat cs)
+                                   end
+-                    | EXPR x   => expr2wires x
+                    )
+ 
+ fun latchPair (inputs, outputs)
+-        = let  val WIRE w = !(monoOut 0)
+-          in   [(DEVICE "DLATCH",    clock::inputs, [w]),
+-                (DEVICE "CBARLATCH", [clock,w],     outputs)]
++        = let  val Circuittype.WIRE w = !(Exprs.monoOut 0)
++          in   [(Circuittype.DEVICE "DLATCH",    clock::inputs, [w]),
++                (Circuittype.DEVICE "CBARLATCH", [clock,w],     outputs)]
+           end
+ 
+ 
+-fun convertLatch (D,    input, output) = latchPair (input, output)
++fun convertLatch (Circuittype.D,    input, output) = latchPair (input, output)
+   (* tjt: was
+   | convertLatch (DI k, input, output) = if    k = (BOOL false)  orelse
+                                                k = (INT 0)       orelse
+@@ -111,11 +113,11 @@
+                                          then  latchPair (input, output)
+                                          else  const_error k
+ 										 *)
+-  | convertLatch (DI (BOOL false), input, output) = latchPair (input, output)
+-  | convertLatch (DI (BOOL true), input, output) = const_error (BOOL false)
+-  | convertLatch (DI (INT k), input, output) = (if k = 0 then latchPair (input, output) else const_error (INT k))
+-  | convertLatch (DI (SYM k), input, output) = (if k = "?" then latchPair (input, output) else const_error (SYM k))
+-  | convertLatch (DI (REAL r), input, output) = const_error (REAL r)
++  | convertLatch (Circuittype.DI (Rubytype.BOOL false), input, output) = latchPair (input, output)
++  | convertLatch (Circuittype.DI (Rubytype.BOOL true), input, output) = const_error (Rubytype.BOOL false)
++  | convertLatch (Circuittype.DI (Rubytype.INT k), input, output) = (if k = 0 then latchPair (input, output) else const_error (Rubytype.INT k))
++  | convertLatch (Circuittype.DI (Rubytype.SYM k), input, output) = (if k = "?" then latchPair (input, output) else const_error (Rubytype.SYM k))
++  | convertLatch (Circuittype.DI (Rubytype.REAL r), input, output) = const_error (Rubytype.REAL r)
+   | convertLatch g                     = [g]
+ 
+ fun convertConsts (dev,input,output)
+@@ -134,8 +136,10 @@
+ fun showALX blockname (dom, ran, rels)
+         = let  val (dwires, dconsts) = expr2wires dom
+                val (rwires, rconsts) = expr2wires ran
+-               val rel'  = flatmap convertConsts (concat rels)
+-               val rel'' = flatmap convertLatch rel'
++			   (*tjt, Jan 2014: must use Utilties.concat, not standard concat
++			   or type errors *)
++               val rel'  = Utilities.flatmap convertConsts (Utilities.concat rels)
++               val rel'' = Utilities.flatmap convertLatch rel'
+           in   "BLOCK " ^ blockname ^ "\n" ^
+                showPorts (dwires, rwires) ^
+                showCells (dconsts @ rel'' @ rconsts) ^
+diff -r 9c58b1a8a60b compiler/printblk.sml
+--- a/compiler/printblk.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/printblk.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -8,60 +8,60 @@
+ 
+ structure Printblk :
+   sig
+-        val showBLK : pcircuit -> string
++        val showBLK : Circuittype.pcircuit -> string
+   end =
+ struct
+ 
+ (**************************************************************************)
+ (**************************************************************************)
+ 
+-fun showDev NOT = "INV"
+-  | showDev AND = "AND"
+-  | showDev OR  = "OR"
+-  | showDev XOR = "XOR"
+-  | showDev d   = simple_error ("device \"" ^ showDevice d ^
++fun showDev Circuittype.NOT = "INV"
++  | showDev Circuittype.AND = "AND"
++  | showDev Circuittype.OR  = "OR"
++  | showDev Circuittype.XOR = "XOR"
++  | showDev d   = Errors.simple_error ("device \"" ^ Show.showDevice d ^
+                                 "\" not allowed in BLK format")
+ 
+ fun showWire w = "sig_of \"" ^
+                  (case w of
+-                    (CON (BOOL false)) => "GND"
+-                  | (CON (BOOL true))  => "VCC"
+-                  | (CON (INT 0))      => "GND"
+-                  | (CON (INT 1))      => "VCC"
+-                  | (CON (SYM "?"))    => "GND"
+-                  | (CON k)            => simple_error ("constant \"" ^
+-                                          showConst k ^
++                    (Circuittype.CON (Rubytype.BOOL false)) => "GND"
++                  | (Circuittype.CON (Rubytype.BOOL true))  => "VCC"
++                  | (Circuittype.CON (Rubytype.INT 0))      => "GND"
++                  | (Circuittype.CON (Rubytype.INT 1))      => "VCC"
++                  | (Circuittype.CON (Rubytype.SYM "?"))    => "GND"
++                  | (Circuittype.CON k)            => Errors.simple_error ("constant \"" ^
++                                          Show.showConst k ^
+                                           "\" not allowed in BLK format")
+-                  | (WIRE (_,n,_))     => "ruby_w" ^ Int.toString (n:int)
++                  | (Circuittype.WIRE (_,n,_))     => "ruby_w" ^ Int.toString (n:int)
+                  ) ^ "\""
+ 
+-fun showIo (VAR s)    = "sig_of \"" ^ s ^ "\""
+-  | showIo (CONST k)  = showWire (CON k)
++fun showIo (Rubytype.VAR s)    = "sig_of \"" ^ s ^ "\""
++  | showIo (Rubytype.CONST k)  = showWire (Circuittype.CON k)
+ 
+ fun showLatch (input, output)
+-        = "DType ("      ^ showWire (hd (flattenExpr output)) ^
+-          ", "           ^ showWire (hd (flattenExpr  input)) ^
+-          ", sig_of \""  ^ (!DATA_blk_clk_ena) ^ "\"" ^
++        = "DType ("      ^ showWire (hd (Exprs.flattenExpr output)) ^
++          ", "           ^ showWire (hd (Exprs.flattenExpr  input)) ^
++          ", sig_of \""  ^ (!Data.DATA_blk_clk_ena) ^ "\"" ^
+           ", sig_of \"GND\"" ^
+-          ", sig_of \""  ^ (!DATA_blk_clk) ^ "\")"
++          ", sig_of \""  ^ (!Data.DATA_blk_clk) ^ "\")"
+ 
+-fun showGate (D,               input, output) = showLatch (input, output)
+-  | showGate (DI (BOOL False), input, output) = showLatch (input, output)
+-  | showGate (DI (INT 0),      input, output) = showLatch (input, output)
+-  | showGate (DI (SYM "?"),    input, output) = showLatch (input, output)
++fun showGate (Circuittype.D,               input, output) = showLatch (input, output)
++  | showGate (Circuittype.DI (Rubytype.BOOL False), input, output) = showLatch (input, output)
++  | showGate (Circuittype.DI (Rubytype.INT 0),      input, output) = showLatch (input, output)
++  | showGate (Circuittype.DI (Rubytype.SYM "?"),    input, output) = showLatch (input, output)
+   | showGate (dev,             input, output)
+         = "Gate (" ^ showDev dev ^
+-          ", "     ^ showWire (hd (flattenExpr output)) ^
+-          ", ["    ^ concatWith ", " (map showWire (flattenExpr input)) ^ "])"
++          ", "     ^ showWire (hd (Exprs.flattenExpr output)) ^
++          ", ["    ^ Utilities.concatWith ", " (map showWire (Exprs.flattenExpr input)) ^ "])"
+ 
+ fun showConnexion (w, io) = "Wire [" ^ showWire w ^ ", " ^ showIo io ^ "]"
+ 
+ fun showBLK (dom, ran, rels)
+   = "\nBlockList := [\n" ^
+-    concatWith ",\n"
+-               (map showGate (concat rels) @
+-                map showConnexion (ioAlias("domain",dom,!DATA_blk_domain_io)) @
+-                map showConnexion (ioAlias("range",ran,!DATA_blk_range_io))) ^
++    Utilities.concatWith ",\n"
++               (map showGate (Utilities.concat rels) @
++                map showConnexion (IoAlias.ioAlias("domain",dom,!Data.DATA_blk_domain_io)) @
++                map showConnexion (IoAlias.ioAlias("range",ran,!Data.DATA_blk_range_io))) ^
+     "\n] @ (!BlockList) ;\n"
+ 
+ (**************************************************************************)
+diff -r 9c58b1a8a60b compiler/printedf.sml
+--- a/compiler/printedf.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/printedf.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -9,7 +9,7 @@
+ 
+ structure Printedf :
+   sig
+-        val showEDF : pcircuit -> string
++        val showEDF : Circuittype.pcircuit -> string
+   end = 
+ struct
+ 
+@@ -17,15 +17,15 @@
+ (**************************************************************************)
+ 
+ fun showExpr e = (case !e of
+-                    CON k       => [showConst k]
+-                  | WIRE (POLY,name,_) =>  [Int.toString name]
++                    Circuittype.CON k       => [Show.showConst k]
++                  | Circuittype.WIRE (Circuittype.POLY,name,_) =>  [Int.toString name]
+                                            (*["." ^ Int.toString name]
+                                            edif doesn't allow names starting
+                                            with "."
+                                             use ":"? *)
+-                  | WIRE (_,   name,_) => [Int.toString name]
+-                  | LIST es            => (flatmap showExpr es)
+-                  | EXPR x             => showExpr x
++                  | Circuittype.WIRE (_,   name,_) => [Int.toString name]
++                  | Circuittype.LIST es            => (Utilities.flatmap showExpr es)
++                  | Circuittype.EXPR x             => showExpr x
+                  )
+ 
+ (**************************************************************************)
+@@ -97,20 +97,20 @@
+ 
+         fun showPorts e = 
+              case (!e) of
+-                    (CON k) => 
+-                        ( putIn_netTb (showConst k) (port (showConst k));
+-                          putIn_portTb (showConst k, "OUTPUT"))
+-        | (WIRE (IN,name,_))=> 
++                    (Circuittype.CON k) => 
++                        ( putIn_netTb (Show.showConst k) (port (Show.showConst k));
++                          putIn_portTb (Show.showConst k, "OUTPUT"))
++        | (Circuittype.WIRE (Circuittype.IN,name,_))=> 
+                         ( putIn_netTb (Int.toString (name:int))
+                             (port (Int.toString (name:int))) ;   
+                         putIn_portTb (Int.toString (name:int), "INPUT"))
+-        | (WIRE (OUT,name,_)) => 
++        | (Circuittype.WIRE (Circuittype.OUT,name,_)) => 
+                         (putIn_netTb (Int.toString (name:int))
+                             (port (Int.toString (name:int))) ; 
+                          putIn_portTb (Int.toString (name:int),"OUTPUT"))
+                         
+-        | (LIST es)         => (map showPorts es; ())
+-        | (EXPR x)          => showPorts x
++        | (Circuittype.LIST es)         => (map showPorts es; ())
++        | (Circuittype.EXPR x)          => showPorts x
+ 
+ 	val dummy1 = showPorts dom
+ 	val dummy2 = showPorts ran
+@@ -118,7 +118,7 @@
+         fun showGate (device, input, output) = 
+          let val inputNets  = showExpr input
+  	     val outputNets = showExpr output
+-          fun processGate D = 
++          fun processGate Circuittype.D = 
+ 		let val instanceRef1 = "FDC" ^ Int.toString (!numFDC)
+ 		    val dummy = numFDC := (!numFDC) +1
+ 		    val instanceRef  = (instanceRef1,"FDC") 
+@@ -136,8 +136,8 @@
+ 		    val net_connect4 = instance ("Q",instanceRef1)
+ 		    val dummy6 = putIn_netTb netOut net_connect4 (*output*)
+ 	         in () end
+-             | processGate (DI k) = processGate D
+-	     | processGate (MUX 2)= 
++             | processGate (Circuittype.DI k) = processGate Circuittype.D
++	     | processGate (Circuittype.MUX 2)= 
+ 	        let val instanceRef1 = "MUX" ^ Int.toString (!numMUX)
+ 		    val dummy = numMUX := (!numMUX) +1
+ 		    val instanceRef = (instanceRef1, "M2_1")
+@@ -155,7 +155,7 @@
+ 		    val net_connect4 = instance ("O", instanceRef1)
+ 		    val dummy5  = putIn_netTb netOut net_connect4
+                   in () end
+-	     | processGate (AND)  = 
++	     | processGate (Circuittype.AND)  = 
+ 		let val instanceRef1 = "AND" ^ Int.toString (!numAND)
+ 		    val dummy = numAND := (!numAND) +1
+ 	            val instanceRef = (instanceRef1, "AND2")
+@@ -170,7 +170,7 @@
+ 		    val net_connect3 = instance ("O", instanceRef1)
+ 		    val dummy4  = putIn_netTb netOut net_connect3
+ 		in () end
+-	     | processGate (NOR)  = 
++	     | processGate (Circuittype.NOR)  = 
+ 		let val instanceRef1 = "NOR" ^ Int.toString (!numNOR)
+ 		    val dummy = numNOR := (!numNOR) +1
+ 	            val instanceRef = (instanceRef1, "NOR2")
+@@ -185,7 +185,7 @@
+ 		    val net_connect3 = instance ("O", instanceRef1)
+ 		    val dummy4  = putIn_netTb netOut net_connect3
+ 		in () end
+-	    | processGate (OR)  = 
++	    | processGate (Circuittype.OR)  = 
+ 		let val instanceRef1 = "OR" ^ Int.toString (!numOR)
+ 		    val dummy = numOR := (!numOR) +1
+ 	            val instanceRef = (instanceRef1, "OR2")
+@@ -200,7 +200,7 @@
+ 		    val net_connect3 = instance ("O", instanceRef1)
+ 		    val dummy4  = putIn_netTb netOut net_connect3
+ 		in () end  
+-            | processGate (XOR)  = 
++            | processGate (Circuittype.XOR)  = 
+ 		let val instanceRef1 = "XOR" ^ Int.toString (!numXOR)
+ 		    val dummy = numXOR := (!numXOR) +1
+ 	            val instanceRef = (instanceRef1, "XOR2")
+@@ -215,7 +215,7 @@
+ 		    val net_connect3 = instance ("O", instanceRef1)
+ 		    val dummy4  = putIn_netTb netOut net_connect3
+ 		in () end
+-	    | processGate (NOT) =
++	    | processGate (Circuittype.NOT) =
+ 		let val instanceRef1 = "INV" ^ Int.toString (!numNOT)  
+ 		    val dummy = numNOT := (!numNOT) +1
+ 		    val instanceRef = (instanceRef1, "INV")
+@@ -235,12 +235,12 @@
+           let fun  print_intf (x1,x2) 
+                 = "      (port " ^ x1 ^ " (direction " ^ x2 ^ "))\n"
+           in 
+-                  (concatWith "" (map print_intf xs))
++                  (Utilities.concatWith "" (map print_intf xs))
+           end
+         fun print_instances xs = 
+           let fun print_instance (x1,x2) 
+                 = "(instance "^x1^" (viewRef view_1 (cellRef " ^ x2 ^ ")))\n"
+-          in (concatWith "" (map print_instance xs))
++          in (Utilities.concatWith "" (map print_instance xs))
+ 	  end
+         fun print_nets xs = 
+           let fun print_net (x1, x2) = 
+@@ -256,7 +256,7 @@
+                "   (joined\n" ^
+                print_Net (!x2) ^ "))\n"
+             end
+-          in concatWith "" (map print_net xs) 
++          in Utilities.concatWith "" (map print_net xs) 
+           end
+ 
+       in "(edif current\n" ^
+@@ -267,7 +267,7 @@
+          "    (written\n" ^
+          "      (program \"Ruby EDIF translator\" (version \"0.0\"))))\n" ^
+          "  (library current \n" ^ 
+-         "    (edifLevel 0)\n" ^ lib ^
++         "    (edifLevel 0)\n" ^ Library.lib ^
+          "(cell current\n" ^
+          "(cellType GENERIC)\n" ^
+          "(view view_1\n" ^ 
+diff -r 9c58b1a8a60b compiler/printmax.sml
+--- a/compiler/printmax.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/printmax.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -2,6 +2,7 @@
+ (**************************************************************************)
+ (***                                                          ***)
+ (***    PrintMax: print as Maxeler MaxJ design                          ***)
++(***    currently outputs Max v2 but code for v1 left as comments       ***)
+ (***                                                          ***)
+ (***    These functions give a printable string representation of a     ***)
+ (***    pcircuit.                                                       ***)
+@@ -16,7 +17,7 @@
+ 		val inputCount : int ref
+ 		val outputCount : int ref
+ 
+-        val showMax : pcircuit -> string
++        val showMax : Circuittype.pcircuit -> string
+   end =
+ struct
+ 
+@@ -29,7 +30,7 @@
+ val inputCount = ref 0;
+ val outputCount = ref 0;
+ 
+-(* utilities to simultaneoulsy use and increment the input / output counters
++(* utilities to simultaneously use and increment the input / output counters
+  * this ensures each input or output name is unique, viz: in1, in2, etc.
+ *)
+ fun nextInputName () = (inputCount := 1 + !inputCount;
+@@ -39,117 +40,119 @@
+ 
+ 
+ fun showExpr e = (case !e of
+-                    CON k       => showConst k
+-                  | WIRE (POLY,name,_) => "t" ^ Int.toString name (* use ":"? *)
+-                  | WIRE (_,   name,_) => "t" ^ Int.toString name
+-                  | LIST es            => "<" ^
+-                                          concatWith "," (map showExpr es) ^
++                    Circuittype.CON k       => Show.showConst k
++                  | Circuittype.WIRE (Circuittype.POLY,name,_) => "t" ^ Int.toString name (* use ":"? *)
++                  | Circuittype.WIRE (_,   name,_) => "t" ^ Int.toString name
++                  | Circuittype.LIST es            => "<" ^
++                                          Utilities.concatWith "," (map showExpr es) ^
+                                           ">"
+-                  | EXPR x             => showExpr x
++                  | Circuittype.EXPR x             => showExpr x
+                  )
+ 
+ (* translate Ruby primitive to Maxeler equivalent as string 
+    note operators are translated to symbols, e.g. 'add' => '+'
+ *)
+-fun maxshowDevice D                 = "D ?"
+-  | maxshowDevice (DI k)            = "D "    ^ showConst k
+-  | maxshowDevice (MUX n)           = "MUXR "  ^ Int.toString n
+-  | maxshowDevice (SDPR n)          = "sdpr " ^ Int.toString n
+-  | maxshowDevice (PDSR n)          = "pdsr " ^ Int.toString n
+-  | maxshowDevice NOT               = "~"
+-  | maxshowDevice AND               = "&&"
+-  | maxshowDevice OR                = "||"
+-  | maxshowDevice XOR               = "^"
+-  | maxshowDevice NAND              = "nand"
+-  | maxshowDevice NOR               = "nor"
+-  | maxshowDevice XNOR              = "xnor"
+-  | maxshowDevice LT                = "<"
+-  | maxshowDevice GT                = ">"
+-  | maxshowDevice LE                = "<="
+-  | maxshowDevice GE                = ">="
+-  | maxshowDevice EQ                = "=="
+-  | maxshowDevice IF                = "?:"
+-  | maxshowDevice BTOI              = "bit2int"
+-  | maxshowDevice ITOB              = "int2bit"
+-  | maxshowDevice ADD               = "+"
+-  | maxshowDevice SUB               = "-"
+-  | maxshowDevice MULT              = "*"
+-  | maxshowDevice DIV               = "/"
+-  | maxshowDevice MOD               = "^"
+-  | maxshowDevice EXP               = "pow"
+-  | maxshowDevice LOG               = "log"
+-  | maxshowDevice MAX               = "max"
+-  | maxshowDevice MIN               = "min"
+-  | maxshowDevice GCD               = "gcd"
+-  | maxshowDevice FAC               = "fac"
+-  | maxshowDevice DEC               = "dec"
+-  | maxshowDevice INC               = "inc"
+-  | maxshowDevice AD                = "AD"
+-  | maxshowDevice ABS               = "abs"
+-  | maxshowDevice REAL2INT          = "real2int"
+-  | maxshowDevice INT2REAL          = "int2real"
+-  | maxshowDevice (BIT2UINT n)      = "bit2uint "
+-  | maxshowDevice (BIT2SINT n)      = "bit2sint "
+-  | maxshowDevice (UINT2BIT n)      = "uint2bit " ^ Int.toString n
+-  | maxshowDevice (SINT2BIT n)      = "sint2bit " ^ Int.toString n
+-  | maxshowDevice (BIT2UREAL (m,n)) = "bit2ureal "
+-  | maxshowDevice (BIT2SREAL (m,n)) = "bit2sreal "
+-  | maxshowDevice (UREAL2BIT (m,n)) = "ureal2bit " ^ Int.toString m ^ " " ^ Int.toString n
+-  | maxshowDevice (SREAL2BIT (m,n)) = "sreal2bit " ^ Int.toString m ^ " " ^ Int.toString n
++fun maxshowDevice Circuittype.NOTHING           = "**ERROR**: maxShowDevice: NOTHING should not occur!"
++  | maxshowDevice Circuittype.D                 = "D ?"
++  | maxshowDevice (Circuittype.DI k)            = "D "    ^ Show.showConst k
++  | maxshowDevice (Circuittype.MUX n)           = "MUXR "  ^ Int.toString n
++  | maxshowDevice (Circuittype.SDPR n)          = "sdpr " ^ Int.toString n
++  | maxshowDevice (Circuittype.PDSR n)          = "pdsr " ^ Int.toString n
++  | maxshowDevice Circuittype.NOT               = "~"
++  | maxshowDevice Circuittype.AND               = "&&"
++  | maxshowDevice Circuittype.OR                = "||"
++  | maxshowDevice Circuittype.XOR               = "^"
++  | maxshowDevice Circuittype.NAND              = "nand"
++  | maxshowDevice Circuittype.NOR               = "nor"
++  | maxshowDevice Circuittype.XNOR              = "xnor"
++  | maxshowDevice Circuittype.LT                = "<"
++  | maxshowDevice Circuittype.GT                = ">"
++  | maxshowDevice Circuittype.LE                = "<="
++  | maxshowDevice Circuittype.GE                = ">="
++  | maxshowDevice Circuittype.EQ                = "=="
++  | maxshowDevice Circuittype.IF                = "?:"
++  | maxshowDevice Circuittype.BTOI              = "bit2int"
++  | maxshowDevice Circuittype.ITOB              = "int2bit"
++  | maxshowDevice Circuittype.ADD               = "+"
++  | maxshowDevice Circuittype.SUB               = "-"
++  | maxshowDevice Circuittype.MULT              = "*"
++  | maxshowDevice Circuittype.DIV               = "/"
++  | maxshowDevice Circuittype.MOD               = "^"
++  | maxshowDevice Circuittype.EXP               = "pow"
++  | maxshowDevice Circuittype.LOG               = "log"
++  | maxshowDevice Circuittype.MAX               = "max"
++  | maxshowDevice Circuittype.MIN               = "min"
++  | maxshowDevice Circuittype.GCD               = "gcd"
++  | maxshowDevice Circuittype.FAC               = "fac"
++  | maxshowDevice Circuittype.DEC               = "dec"
++  | maxshowDevice Circuittype.INC               = "inc"
++  | maxshowDevice Circuittype.AD                = "AD"
++  | maxshowDevice Circuittype.ABS               = "abs"
++  | maxshowDevice Circuittype.REAL2INT          = "real2int"
++  | maxshowDevice Circuittype.INT2REAL          = "int2real"
++  | maxshowDevice (Circuittype.BIT2UINT n)      = "bit2uint "
++  | maxshowDevice (Circuittype.BIT2SINT n)      = "bit2sint "
++  | maxshowDevice (Circuittype.UINT2BIT n)      = "uint2bit " ^ Int.toString n
++  | maxshowDevice (Circuittype.SINT2BIT n)      = "sint2bit " ^ Int.toString n
++  | maxshowDevice (Circuittype.BIT2UREAL (m,n)) = "bit2ureal "
++  | maxshowDevice (Circuittype.BIT2SREAL (m,n)) = "bit2sreal "
++  | maxshowDevice (Circuittype.UREAL2BIT (m,n)) = "ureal2bit " ^ Int.toString m ^ " " ^ Int.toString n
++  | maxshowDevice (Circuittype.SREAL2BIT (m,n)) = "sreal2bit " ^ Int.toString m ^ " " ^ Int.toString n
++  | maxshowDevice (Circuittype.DEVICE _)        = "**ERROR**: maxShowDevice: DEVICE not supported"
+ 
+ 
+-(* isInfix: true iff device is an infix operator in Max *)
++(* isInfix: true ifCircuittype.f device is an infix operator in Max *)
+ fun 
+-    isInfix AND               = true
+-  | isInfix OR                = true
+-  | isInfix XOR               = true
+-  | isInfix NAND              = true
+-  | isInfix NOR               = true
+-  | isInfix XNOR              = true
+-  | isInfix LT                = true
+-  | isInfix GT                = true
+-  | isInfix LE                = true
+-  | isInfix GE                = true
+-  | isInfix EQ                = true
+-  | isInfix ADD               = true
+-  | isInfix SUB               = true
+-  | isInfix MULT              = true
+-  | isInfix DIV               = true
+-  | isInfix MOD               = true
++    isInfix Circuittype.AND               = true
++  | isInfix Circuittype.OR                = true
++  | isInfix Circuittype.XOR               = true
++  | isInfix Circuittype.NAND              = true
++  | isInfix Circuittype.NOR               = true
++  | isInfix Circuittype.XNOR              = true
++  | isInfix Circuittype.LT                = true
++  | isInfix Circuittype.GT                = true
++  | isInfix Circuittype.LE                = true
++  | isInfix Circuittype.GE                = true
++  | isInfix Circuittype.EQ                = true
++  | isInfix Circuittype.ADD               = true
++  | isInfix Circuittype.SUB               = true
++  | isInfix Circuittype.MULT              = true
++  | isInfix Circuittype.DIV               = true
++  | isInfix Circuittype.MOD               = true
+   | isInfix _                 = false
+ 
+ (* isDelay: true iff device is a delay *)
+-fun isDelay D                 = true
+-  | isDelay (DI k)            = true
++fun isDelay Circuittype.D                 = true
++  | isDelay (Circuittype.DI k)            = true
+   | isDelay _                 = false
+ 
+ (* isAntiDelay: true iff device is a delay *)
+-fun isAntiDelay AD            = true
++fun isAntiDelay Circuittype.AD            = true
+   | isAntiDelay _             = false
+ 
+-fun isIf IF                   = true
++fun isIf Circuittype.IF                   = true
+   | isIf _                    = false
+ 
+ (* print gate as Maxeler DFG fragment *)
+ fun showGate (device, input, output)
+         = 
+ 			"   " ^
+-		  "HWVar " ^
++		  "DFEVar " ^
+                        showExpr output ^ 
+ 		  " = " ^
+ 		  (
+ 		  (* infix ops: generate by interspersing translated operator
+-		  within its inputs, so add <.2,.3> ~ .1 => HWVar t1 = t2 + t3;
++		  within its inputs, so add <.2,.3> ~ .1 => DFEVar t1 = t2 + t3;
+ 		  *)
+ 			if isInfix device
+ 			then (
+ 				case !input of
+-                    CON k       => showConst k
+-                  | WIRE (POLY,name,_) => "t" ^ Int.toString name (* use ":"? *)
+-                  | WIRE (_,   name,_) => "t" ^ Int.toString name
+-                  | LIST es            => 
+-                                          concatWith (maxshowDevice device) (map showExpr es)
+-                  | EXPR x             => showExpr x
++                    Circuittype.CON k       => Show.showConst k
++                  | Circuittype.WIRE (Circuittype.POLY,name,_) => "t" ^ Int.toString name (* use ":"? *)
++                  | Circuittype.WIRE (_,   name,_) => "t" ^ Int.toString name
++                  | Circuittype.LIST es            => 
++                                          Utilities.concatWith (maxshowDevice device) (map showExpr es)
++                  | Circuittype.EXPR x             => showExpr x
+ 			)
+ 			(* translate delays to stream -ve offsets *)
+ 			else if isDelay device
+@@ -173,35 +176,35 @@
+ 				(* hack: only support input which is a list of expressions
+ 				*        if doesn;t make much sense otherwise *)
+               	case !input of
+-                          CON k       => "ERROR_IF_CONSTANT"
+-                        | WIRE (_,   name,_) => "ERROR_IF_WIRE"
+-                        | LIST es            =>
++                          Circuittype.CON k       => "ERROR_IF_CONSTANT"
++                        | Circuittype.WIRE (_,   name,_) => "ERROR_IF_WIRE"
++                        | Circuittype.LIST es            =>
+ 						   (
+ 						      "(" ^ (showExpr (List.nth(es, 0))) ^ ") ? " ^
+ 						      "(" ^ (showExpr (List.nth(es, 1))) ^ ") : " ^
+ 						      "(" ^ (showExpr (List.nth(es, 2))) ^ ")"
+ 						   )
+-                        | EXPR x             => "ERROR_IF_EXPR"
++                        | Circuittype.EXPR x             => "ERROR_IF_EXPR"
+ 				) ^
+ 				")"
+ 			)
+ 			else (
+ 			(* noninfix: just translate brackets *)
+-          ljustify 15 (maxshowDevice device) ^
++          Utilities.ljustify 15 (maxshowDevice device) ^
+ 		  "(" ^
+-          ljustify 19 (showExpr input) ^
++          Utilities.ljustify 19 (showExpr input) ^
+ 		  ")" 
+ 		  )) ^
+ 		  ";\n"
+ 
+-fun showRelation ds = concatWith "" (map showGate ds)
++fun showRelation ds = Utilities.concatWith "" (map showGate ds)
+ 
+ fun showRelations [] = ""
+   | showRelations rs = let  val sep = "   //----------------------------------------\n"
+                        in   " // Relations:\n" ^
+ 					        "\n   // Output           Input\n" ^
+                             sep ^
+-                            concatWith sep (map showRelation rs) ^
++                            Utilities.concatWith sep (map showRelation rs) ^
+                             sep
+                        end
+ 
+@@ -210,50 +213,83 @@
+ 
+ (* declare input *)
+ fun showInput e = 
+-			"      HWVar " ^
++			"      DFEVar " ^
+ 			(case !e of
+-                    CON k       => "/*con*/ " ^ showConst k
+-                  | WIRE (POLY,name,_) => "/*poly*/ t" ^ Int.toString name (* use ":"? *)
+-                  | WIRE (_,   name,_) => "/*_*/ t" ^ Int.toString name
+-                  | LIST es            => "<" ^
+-                                          concatWith "," (map showInput es) ^
++                    Circuittype.CON k       => "/*con*/ " ^ Show.showConst k
++                  | Circuittype.WIRE (Circuittype.POLY,name,_) => "/*poly*/ t" ^ Int.toString name (* use ":"? *)
++                  | Circuittype.WIRE (_,   name,_) => "/*_*/ t" ^ Int.toString name
++                  | Circuittype.LIST es            => "<" ^
++                                          Utilities.concatWith "," (map showInput es) ^
+                                           ">"
+-                  | EXPR x             => showInput x
++                  | Circuittype.EXPR x             => showInput x
+                  ) ^
+ 			 " = io.input(\"inp" ^
+ 			 (* use and increment the input counter *)
+ 			 (Int.toString (nextInputName())) ^
+ 			 "\", dataType);"
+ 
++(* isInputDir: true iff input is IN or POLY (bidirectional, which we interpret
++as input) *)
++fun isInputDir dir = (case dir of
++                        Circuittype.IN     => true
++                      | Circuittype.OUT    => false
++                      | Circuittype.POLY   => true
++                      )
+ 
++
++(* isInput: true iff wire is an input *)
++(* for some reason you can't have more than one level of pattern match here.
++   If we wrote this function like:
++   ...
++			| Circuittype.WIRE (IN  ,_,_)  => true
++			| Circuittype.WIRE (OUT  ,_,_)  => false
++			| Circuittype.WIRE (POLY  ,_,_)  => true
++	...
++	then SMLNJ gives an error: "redundant match" between OUT and POLY cases,
++	even though they should be different in any sane language
++
++	Note we exhaustively match to prevent any idiotic warnings about
++	inexhaustive matches.
++*)
++fun isInput e = (case !e of
++			  Circuittype.CON _              => false
++			| Circuittype.WIRE (dir  ,_,_)  => isInputDir dir
++			| Circuittype.LIST _  => false
++			| Circuittype.EXPR _  => false
++		   )
+ (* print inputs from both domain and range in max format *)
+ fun showInputs (dom, ran)
+         
+-        = let  fun isInput e = (case !e of
+-		                          (*CON (SYM _)      => true
+-                                |*) WIRE (IN  ,_,_)  => true
+-                                | WIRE (POLY,_,_)  => true
+-                                | _                => false
++        = let  
++		(*
++		       fun isInput e = (case !e of
++		                          Circuittype.CON _              => false
++                                | Circuittype.WIRE (IN  ,_,_)  => true
++                                | Circuittype.WIRE (POLY,_,_)  => true
++                                | Circuittype.WIRE (OUT,_,_)  => false
++                                | Circuittype.LIST _  => false
++                                | Circuittype.EXPR _  => false
+                                )
++		*)
+ 							   
+-               val wires = exprWires dom @ exprWires ran
+-               val inputs = filter isInput wires
++               val wires = Exprs.exprWires dom @ Exprs.exprWires ran
++               val inputs = Utilities.filter isInput wires
+                val inStr = if    null inputs
+                            then  "// (none)\n"
+-                           else  concatWith "\n" (map showInput inputs)
++                           else  Utilities.concatWith "\n" (map showInput inputs)
+           in   "\n // Inputs -  \n" ^ inStr ^ "\n"                
+           end
+ 
+ fun showDirections (dom, ran)
+         = let  fun showDir e = (case !e of
+-                                  CON k           => "out1"
+-                                | WIRE (IN,  _,_) => "in"
+-                                | WIRE (OUT, _,_) => "out2"
+-                                | WIRE (POLY,_,_) => "?"
+-                                | LIST es         => "<" ^ concatWith ","
++                                  Circuittype.CON k           => "out1"
++                                | Circuittype.WIRE (Circuittype.IN,  _,_) => "in"
++                                | Circuittype.WIRE (Circuittype.OUT, _,_) => "out2"
++                                | Circuittype.WIRE (Circuittype.POLY,_,_) => "?"
++                                | Circuittype.LIST es         => "<" ^ Utilities.concatWith ","
+                                                            (map showDir es) ^
+                                                   ">"
+-                                | EXPR x          => showDir x
++                                | Circuittype.EXPR x          => showDir x
+                                )
+           in   "\n // Directions -  " ^ showDir dom ^ " ~ " ^ showDir ran ^ "\n"
+           end
+@@ -264,13 +300,13 @@
+ 			Int.toString (nextOutputName()) ^
+ 			"\", " ^
+ 			(case !e of
+-                    CON k       => showConst k
+-                  | WIRE (POLY,name,_) => "/*poly*/ t" ^ Int.toString name (* use ":"? *)
+-                  | WIRE (_,   name,_) => "/*_*/ t" ^ Int.toString name
+-                  | LIST es            => "<" ^
+-                                          concatWith "," (map showOutput es) ^
++                    Circuittype.CON k       => Show.showConst k
++                  | Circuittype.WIRE (Circuittype.POLY,name,_) => "/*poly*/ t" ^ Int.toString name (* use ":"? *)
++                  | Circuittype.WIRE (_,   name,_) => "/*_*/ t" ^ Int.toString name
++                  | Circuittype.LIST es            => "<" ^
++                                          Utilities.concatWith "," (map showOutput es) ^
+                                           ">"
+-                  | EXPR x             => showOutput x
++                  | Circuittype.EXPR x             => showOutput x
+                  ) ^
+ 			 ", dataType);"
+ 
+@@ -281,17 +317,17 @@
+ fun showOutputs (dom, ran)
+         
+         = let  fun isOutput e = (case !e of
+-                                  WIRE (IN  ,_,_)  => false
+-                                | WIRE (POLY,_,_)  => true
+-                                | WIRE (Out,_,_)  => true
++                                  Circuittype.WIRE (Circuittype.IN  ,_,_)  => false
++                                | Circuittype.WIRE (Circuittype.POLY,_,_)  => true
++                                | Circuittype.WIRE (Out,_,_)  => true
+                                 | _                => false
+                                )
+ 							   
+-               val wires = exprWires dom @ exprWires ran
+-               val outputs = filter isOutput wires
++               val wires = Exprs.exprWires dom @ Exprs.exprWires ran
++               val outputs = Utilities.filter isOutput wires
+                val outStr = if    null outputs
+                            then  "// (none)"
+-                           else  concatWith "\n" (map showOutput outputs)
++                           else  Utilities.concatWith "\n" (map showOutput outputs)
+           in   "\n // Outputs -  \n" ^ outStr ^ "\n"                
+           end
+ 
+@@ -300,25 +336,28 @@
+    (no banners, nothing) and a null output file when applied to the domain
+    for some files (e.g. symbol.rby) *)
+ fun showOutputsX e = (case !e of
+-                    CON k       => 
++                    Circuittype.CON k       => 
+ 				     "      io.output(\"out" ^
+ 			         Int.toString (nextOutputName()) ^ "\", " ^
+-					 showConst k ^
++					 Show.showConst k ^
+ 					 ", dataType); // (con)"
+-                  | WIRE (POLY,name,_) => 
++                  | Circuittype.WIRE (Circuittype.POLY,name,_) => 
+ 				     "      io.output(\"out" ^
+ 			         Int.toString (nextOutputName()) ^
+ 					 "\", t" ^ Int.toString name ^
+ 					 ", dataType); // (poly)"
+-                  | WIRE (OUT,   name,_) => 
++                  | Circuittype.WIRE (Circuittype.OUT,   name,_) => 
+ 				     "      io.output(\"out" ^
+ 			         Int.toString (nextOutputName()) ^
+ 					 "\", t" ^ Int.toString name ^
+ 					 ", dataType); // (out)"
+-                  | LIST es            => "" ^
+-                                          concatWith "\n" (map showOutputsX es) ^
++                  | Circuittype.WIRE (Circuittype.IN,   _,_) => 
++				     ""    (* this is just to prevent warnings about
++					 inexhaustive match *)
++                  | Circuittype.LIST es            => "" ^
++                                          Utilities.concatWith "\n" (map showOutputsX es) ^
+                                           ""
+-                  | EXPR x             => showOutputsX x
++                  | Circuittype.EXPR x             => showOutputsX x
+                  )
+ 
+ 
+@@ -330,11 +369,11 @@
+ (* standard Maxeler imports, needed for all designs
+ *)
+ val stdMaxImports =
+-		  "import com.maxeler.maxcompiler.v1.kernelcompiler.Kernel;\n" ^
+-		  "import com.maxeler.maxcompiler.v1.kernelcompiler.KernelParameters;\n"^
+-		  "import com.maxeler.maxcompiler.v1.kernelcompiler.types.base.HWVar;\n"^
+-		  (* HWType needed for parameterisable dataType *)
+-		  "import com.maxeler.maxcompiler.v1.kernelcompiler.types.base.HWType;\n"
++		  "import com.maxeler.maxcompiler.v2.kernelcompiler.Kernel;\n" ^
++		  "import com.maxeler.maxcompiler.v2.kernelcompiler.KernelParameters;\n"^
++		  "import com.maxeler.maxcompiler.v2.kernelcompiler.types.base.DFEVar;\n"^
++		  (* DFEType needed for parameterisable dataType *)
++		  "import com.maxeler.maxcompiler.v2.kernelcompiler.types.base.DFEType;\n"
+ 
+ 
+ (* top-level: print design as a Maxeler MaxJ kernel *)
+@@ -350,14 +389,14 @@
+ 		  "// class:\n" ^
+ 		  "public class current extends Kernel {\n" ^
+ 		  "\n" ^
+-		  "  final HWType dataType = hwFloat(8, 24);\n" ^
++		  "  final DFEType dataType = dfeFloat(8, 24);\n" ^
+ 		  "\n" ^
+ 		  "  public current (KernelParameters parameters) {\n" ^
+ 		  "    super(parameters);\n" ^
+ 		  "\n" ^
+ 		  "\n" ^
+           showInputs (dom, ran) ^
+-		  showRelations (filter (not o null) rels) ^
++		  showRelations (Utilities.filter (not o null) rels) ^
+           showDirections (dom, ran) ^
+           showWiring (dom, ran) ^
+           showOutputs (dom, ran) ^
+diff -r 9c58b1a8a60b compiler/printrbs.sml
+--- a/compiler/printrbs.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/printrbs.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -9,7 +9,7 @@
+ 
+ structure Printrbs :
+   sig
+-        val showRBS : pcircuit -> string
++        val showRBS : Circuittype.pcircuit -> string
+   end =
+ struct
+ 
+@@ -17,28 +17,28 @@
+ (**************************************************************************)
+ 
+ fun showExpr e = (case !e of
+-                    CON k       => showConst k
+-                  | WIRE (POLY,name,_) => "." ^ Int.toString name (* use ":"? *)
+-                  | WIRE (_,   name,_) => "." ^ Int.toString name
+-                  | LIST es            => "<" ^
+-                                          concatWith "," (map showExpr es) ^
++                    Circuittype.CON k       => Show.showConst k
++                  | Circuittype.WIRE (Circuittype.POLY,name,_) => "." ^ Int.toString name (* use ":"? *)
++                  | Circuittype.WIRE (_,   name,_) => "." ^ Int.toString name
++                  | Circuittype.LIST es            => "<" ^
++                                          Utilities.concatWith "," (map showExpr es) ^
+                                           ">"
+-                  | EXPR x             => showExpr x
++                  | Circuittype.EXPR x             => showExpr x
+                  )
+ 
+ fun showGate (device, input, output)
+         = "   " ^
+-          ljustify 15 (showDevice device) ^
+-          ljustify 19 (showExpr input) ^
++          Utilities.ljustify 15 (Show.showDevice device) ^
++          Utilities.ljustify 19 (showExpr input) ^
+                        showExpr output ^ "\n"
+ 
+-fun showRelation ds = concatWith "" (map showGate ds)
++fun showRelation ds =Utilities.concatWith "" (map showGate ds)
+ 
+ fun showRelations [] = ""
+   | showRelations rs = let  val sep = "   ----------------------------------------\n"
+                        in   "\n   Name           Domain             Range\n" ^
+                             sep ^
+-                            concatWith sep (map showRelation rs) ^
++                           Utilities.concatWith sep (map showRelation rs) ^
+                             sep
+                        end
+ 
+@@ -48,8 +48,8 @@
+ fun showInputs (dom, ran)
+         
+         = let  fun isInput e = (case !e of
+-                                  WIRE (IN  ,_,_)  => true
+-                                | WIRE (POLY,_,_)  => true
++                                  Circuittype.WIRE (Circuittype.IN  ,_,_)  => true
++                                | Circuittype.WIRE (Circuittype.POLY,_,_)  => true
+                                 | _                => false
+                                )
+ 							   
+@@ -61,36 +61,36 @@
+ 								| LIST (_)           => false
+                                )
+ 							   *)
+-               val wires = exprWires dom @ exprWires ran
++               val wires = Exprs.exprWires dom @ Exprs.exprWires ran
+ 			   (* tjt97: was:
+                val inputs = orderedRemduprefs (filter isInput wires)
+ 			   *)
+ 			   (*
+                val inputs = tjt97remDupRefs (filter isInput wires)
+ 			   *)
+-               val inputs = filter isInput wires
++               val inputs = Utilities.filter isInput wires
+                val inStr = if    null inputs
+                            then  "none"
+-                           else  concatWith " " (map showExpr inputs)
++                           else Utilities.concatWith " " (map showExpr inputs)
+           in   "\n Inputs -  " ^ inStr ^ "\n"                
+           end
+ 
+ fun showDirections (dom, ran)
+         = let  fun showDir e = (case !e of
+-                                  CON k           => "out"
+-                                | WIRE (IN,  _,_) => "in"
+-                                | WIRE (OUT, _,_) => "out"
+-                                | WIRE (POLY,_,_) => "?"
+-                                | LIST es         => "<" ^ concatWith ","
++                                  Circuittype.CON k           => "out"
++                                | Circuittype.WIRE (Circuittype.IN,  _,_) => "in"
++                                | Circuittype.WIRE (Circuittype.OUT, _,_) => "out"
++                                | Circuittype.WIRE (Circuittype.POLY,_,_) => "?"
++                                | Circuittype.LIST es         => "<" ^ Utilities.concatWith ","
+                                                            (map showDir es) ^
+                                                   ">"
+-                                | EXPR x          => showDir x
++                                | Circuittype.EXPR x          => showDir x
+                                )
+           in   "\n Directions -  " ^ showDir dom ^ " ~ " ^ showDir ran ^ "\n"
+           end
+ 
+ fun showRBS (dom, ran, rels)
+-        = showRelations (filter (not o null) rels) ^
++        = showRelations (Utilities.filter (not o null) rels) ^
+           showDirections (dom, ran) ^
+           showWiring (dom, ran) ^
+           showInputs (dom, ran)
+diff -r 9c58b1a8a60b compiler/printvhd.sml
+--- a/compiler/printvhd.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/printvhd.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -5,7 +5,7 @@
+ 
+ structure PrintVhdl :
+   sig
+-        val printVHDL : pcircuit -> string
++        val printVHDL : Circuittype.pcircuit -> string
+   end =
+ struct
+ 
+@@ -32,12 +32,12 @@
+                 if (!num_list) = num 
+                 then let val dummy = num_list := 0
+                      in 
+-              ((ljustify (NUM_LETTERS-1) (x ^str^"\n"))
++              ((Utilities.ljustify (NUM_LETTERS-1) (x ^str^"\n"))
+                                :: (trim_list xs)) 
+                      end
+                 else let val dummy = 
+                       num_list := (!num_list + 1)
+-                     in ((ljustify NUM_LETTERS (x ^str)) 
++                     in ((Utilities.ljustify NUM_LETTERS (x ^str)) 
+                          :: (trim_list xs)) 
+                      end
+         in trim_list string_list
+@@ -71,31 +71,31 @@
+ 
+ fun include_lib _ = 
+    let val part_and = if !have_and
+-                             then vhdl_and 
++                             then VHDL_Library.vhdl_and 
+                       else ""
+        val part_or  = if !have_or
+-                             then vhdl_or
++                             then VHDL_Library.vhdl_or
+                       else ""
+        val part_not = if !have_not
+-                             then vhdl_not
++                             then VHDL_Library.vhdl_not
+                       else ""
+        val part_xor = if !have_xor
+-                             then vhdl_xor
++                             then VHDL_Library.vhdl_xor
+                       else ""
+    in part_and ^ part_or ^ part_not ^ part_xor end
+ 
+ fun include_lib_config _ = 
+    let val part_and = if !have_and
+-                             then vhdl_conf_and 
++                             then VHDL_Library.vhdl_conf_and 
+                       else ""
+        val part_or  = if !have_or
+-                             then vhdl_conf_or
++                             then VHDL_Library.vhdl_conf_or
+                       else ""
+        val part_not = if !have_not
+-                             then vhdl_conf_not
++                             then VHDL_Library.vhdl_conf_not
+                       else ""
+        val part_xor = if !have_xor
+-                             then vhdl_conf_xor
++                             then VHDL_Library.vhdl_conf_xor
+                       else ""
+    in part_and ^ part_or ^ part_not ^ part_xor end        
+ 
+@@ -145,9 +145,9 @@
+ fun put_nets net = let val table1 = !signal_table
+                        val table2 = !input_table
+                        val table3 = !output_table 
+-                   in if  (elem net table1)     then () 
+-                      else if (elem net table2) then ()
+-                      else if (elem net table3) then ()
++                   in if  (Utilities.elem net table1)     then () 
++                      else if (Utilities.elem net table2) then ()
++                      else if (Utilities.elem net table3) then ()
+                       else signal_table := net :: table1
+                    end
+ 
+@@ -158,23 +158,23 @@
+ (******************************************************)
+ 
+ fun printExpr put_name e = (case !e of
+-          CON k       => [showConst k]
+- | WIRE (POLY,name,_) => let 
++          Circuittype.CON k       => [Show.showConst k]
++ | Circuittype.WIRE (Circuittype.POLY,name,_) => let 
+                             val net_name = 
+                               "net_" ^ Int.toString name
+                          in if put_name = "not_put" then
+                                      [net_name]
+                             else (put_nets net_name; [net_name])
+                             end
+- | WIRE (_,   name,_) => let 
++ | Circuittype.WIRE (_,   name,_) => let 
+                           val net_name = 
+                              "net_" ^ Int.toString name
+                          in if put_name = "not_put" then
+                                     [net_name]
+                            else (put_nets net_name; [net_name])
+                             end
+- | LIST es            => (flatmap (printExpr put_name) es)
+- | EXPR x             => printExpr put_name x
++ | Circuittype.LIST es            => (Utilities.flatmap (printExpr put_name) es)
++ | Circuittype.EXPR x             => printExpr put_name x
+ )
+ 
+ fun printGate (device, input, output) = 
+@@ -185,13 +185,13 @@
+                   in (b orelse b1, net1 :: nets) 
+                   end
+           fun has_constant e = (case !e of
+-                CON k              => (true,printExpr "put" e)
+-              | WIRE (POLY,name,_) => (false, printExpr "put" e)
+-              | WIRE (_,   name,_) => (false, printExpr "put" e)
+-              | LIST es            => (maplogic (map has_constant es))
+-              | EXPR x             => (has_constant x) 
++                Circuittype.CON k              => (true,printExpr "put" e)
++              | Circuittype.WIRE (Circuittype.POLY,name,_) => (false, printExpr "put" e)
++              | Circuittype.WIRE (_,   name,_) => (false, printExpr "put" e)
++              | Circuittype.LIST es            => (maplogic (map has_constant es))
++              | Circuittype.EXPR x             => (has_constant x) 
+                  )
+-          val gate' = showDevice device
++          val gate' = Show.showDevice device
+           fun produce_name "and" = "AND2 "
+             | produce_name "or"  = "OR2 "
+             | produce_name "xor" = "XOR2 "
+@@ -259,13 +259,13 @@
+           end 
+ 
+ 
+-fun printRelation ds = concatWith "" (map printGate ds)
++fun printRelation ds = Utilities.concatWith "" (map printGate ds)
+ 
+ 
+ fun printRelations [] = ""
+   | printRelations rs = 
+          let val part1 = 
+-                    concatWith "" (map printRelation rs)
++                    Utilities.concatWith "" (map printRelation rs)
+              val part2 = if !have_GND then "XGND <= '0';\n"
+                          else ""
+              val part3 = if !have_VCC then "XVCC <= '1';\n"
+@@ -281,40 +281,40 @@
+ 
+ fun printInputs (dom, ran)
+         = let  fun isInput e = (case !e of
+-                                  WIRE (IN  ,_,_)  => true
+-                                | WIRE (POLY,_,_)  => true
++                                  Circuittype.WIRE (Circuittype.IN  ,_,_)  => true
++                                | Circuittype.WIRE (Circuittype.POLY,_,_)  => true
+                                 | _                => false
+                                )
+-               val wires = exprWires dom @ exprWires ran
++               val wires = Exprs.exprWires dom @ Exprs.exprWires ran
+                val inputs =
+ 			   (* tjt97 - can't get the remove duplicates to work
+ 			   was:
+-                    orderedRemduprefs (filter isInput wires)
++                    orderedRemduprefs (Utilities.filter isInput wires)
+ 					*)
+-                    (filter isInput wires)
+-               val Inputs = flatmap (printExpr "not_put") inputs 
++                    (Utilities.filter isInput wires)
++               val Inputs = Utilities.flatmap (printExpr "not_put") inputs 
+                val dummy  = input_table := Inputs
+-               val inStr  = concatWith "" 
++               val inStr  = Utilities.concatWith "" 
+                  (trimStringList Inputs NUM_NETS ",")
+           in   inStr ^ ": in std_logic; "                
+           end
+ 
+ fun printOutputs (dom, ran)
+         = let  fun isOutput e = (case !e of
+-                                  WIRE (OUT  ,_,_) => true
++                                  Circuittype.WIRE (Circuittype.OUT  ,_,_) => true
+                                 | _                => false
+                                )
+-               val wires = exprWires dom @ exprWires ran
++               val wires = Exprs.exprWires dom @ Exprs.exprWires ran
+                val outputs =
+ 			   (* tjt97 - do not remove duplicates again
+ 			   was:
+-                   orderedRemduprefs (filter isOutput wires)
++                   orderedRemduprefs (Utilities.filter isOutput wires)
+ 				   *)
+-                   (filter isOutput wires)
++                   (Utilities.filter isOutput wires)
+                val Outputs = 
+-                   flatmap (printExpr "not_put") outputs
++                   Utilities.flatmap (printExpr "not_put") outputs
+                val dummy   = output_table := Outputs
+-               val inStr = concatWith "" 
++               val inStr = Utilities.concatWith "" 
+                   (trimStringList (Outputs) NUM_NETS ",")
+           in  inStr ^ ": out std_logic);\n"                
+           end
+@@ -344,7 +344,7 @@
+                 else ()                          
+              val signals = ! signal_table
+              val str     = 
+-                 concatWith "" 
++                 Utilities.concatWith "" 
+                       (trimStringList signals NUM_NETS ",")
+           in "\nsignal\n" ^ str ^ ": std_logic;\n"
+           end
+diff -r 9c58b1a8a60b compiler/printvlg.sml
+--- a/compiler/printvlg.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/printvlg.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -10,7 +10,7 @@
+ 
+ structure PrintVerilog :
+   sig
+-        val printVerilog : pcircuit -> string
++        val printVerilog : Circuittype.pcircuit -> string
+   end =
+ struct
+ 
+@@ -37,12 +37,12 @@
+                 if (!num_list) = num 
+                 then let val dummy = num_list := 0
+                      in 
+-              ((ljustify (NUM_LETTERS-1) (x ^str^"\n"))
++              ((Utilities.ljustify (NUM_LETTERS-1) (x ^str^"\n"))
+                                :: (trim_list xs)) 
+                      end
+                 else let val dummy = 
+                       num_list := (!num_list + 1)
+-                     in ((ljustify NUM_LETTERS (x ^str)) 
++                     in ((Utilities.ljustify NUM_LETTERS (x ^str)) 
+                          :: (trim_list xs)) 
+                      end
+         in trim_list string_list
+@@ -109,16 +109,16 @@
+ 
+ fun include_lib_config _ = 
+    let val part_and = if !have_and
+-                             then vhdl_conf_and 
++                             then VHDL_Library.vhdl_conf_and 
+                       else ""
+        val part_or  = if !have_or
+-                             then vhdl_conf_or
++                             then VHDL_Library.vhdl_conf_or
+                       else ""
+        val part_not = if !have_not
+-                             then vhdl_conf_not
++                             then VHDL_Library.vhdl_conf_not
+                       else ""
+        val part_xor = if !have_xor
+-                             then vhdl_conf_xor
++                             then VHDL_Library.vhdl_conf_xor
+                       else ""
+    in part_and ^ part_or ^ part_not ^ part_xor end        
+ 
+@@ -168,9 +168,9 @@
+ fun put_nets net = let val table1 = !signal_table
+                        val table2 = !input_table
+                        val table3 = !output_table 
+-                   in if  (elem net table1)     then () 
+-                      else if (elem net table2) then ()
+-                      else if (elem net table3) then ()
++                   in if  (Utilities.elem net table1)     then () 
++                      else if (Utilities.elem net table2) then ()
++                      else if (Utilities.elem net table3) then ()
+                       else signal_table := net :: table1
+                    end
+ 
+@@ -181,23 +181,23 @@
+ (******************************************************)
+ 
+ fun printExpr put_name e = (case !e of
+-          CON k       => [showConst k]
+- | WIRE (POLY,name,_) => let 
++          Circuittype.CON k       => [Show.showConst k]
++ | Circuittype.WIRE (Circuittype.POLY,name,_) => let 
+                             val net_name = 
+                               "net_" ^ Int.toString name
+                          in if put_name = "not_put" then
+                                      [net_name]
+                             else (put_nets net_name; [net_name])
+                             end
+- | WIRE (_,   name,_) => let 
++ | Circuittype.WIRE (_,   name,_) => let 
+                           val net_name = 
+                              "net_" ^ Int.toString name
+                          in if put_name = "not_put" then
+                                     [net_name]
+                            else (put_nets net_name; [net_name])
+                             end
+- | LIST es            => (flatmap (printExpr put_name) es)
+- | EXPR x             => printExpr put_name x
++ | Circuittype.LIST es            => (Utilities.flatmap (printExpr put_name) es)
++ | Circuittype.EXPR x             => printExpr put_name x
+ )
+ 
+ fun printGate (device, input, output) = 
+@@ -208,13 +208,13 @@
+                   in (b orelse b1, net1 :: nets) 
+                   end
+           fun has_constant e = (case !e of
+-                CON k              => (true,printExpr "put" e)
+-              | WIRE (POLY,name,_) => (false, printExpr "put" e)
+-              | WIRE (_,   name,_) => (false, printExpr "put" e)
+-              | LIST es            => (maplogic (map has_constant es))
+-              | EXPR x             => (has_constant x) 
++                Circuittype.CON k              => (true,printExpr "put" e)
++              | Circuittype.WIRE (Circuittype.POLY,name,_) => (false, printExpr "put" e)
++              | Circuittype.WIRE (_,   name,_) => (false, printExpr "put" e)
++              | Circuittype.LIST es            => (maplogic (map has_constant es))
++              | Circuittype.EXPR x             => (has_constant x) 
+                  )
+-          val gate' = showDevice device
++          val gate' = Show.showDevice device
+           fun produce_name "and" = "AND2 "
+             | produce_name "or"  = "OR2 "
+             | produce_name "xor" = "XOR2 "
+@@ -307,13 +307,13 @@
+           end 
+ 
+ 
+-fun printRelation ds = concatWith "" (map printGate ds)
++fun printRelation ds = Utilities.concatWith "" (map printGate ds)
+ 
+ 
+ fun printRelations [] = ""
+   | printRelations rs = 
+          let val part1 = 
+-                    concatWith "" (map printRelation rs)
++                    Utilities.concatWith "" (map printRelation rs)
+              val part2 = if !have_GND then "XGND <= '0';\n"
+                          else ""
+              val part3 = if !have_VCC then "XVCC <= '1';\n"
+@@ -330,21 +330,21 @@
+ 
+ fun printInputs (dom, ran)
+         = let  fun isInput e = (case !e of
+-                                  WIRE (IN  ,_,_)  => true
+-                                | WIRE (POLY,_,_)  => true
++                                  Circuittype.WIRE (Circuittype.IN  ,_,_)  => true
++                                | Circuittype.WIRE (Circuittype.POLY,_,_)  => true
+                                 | _                => false
+                                )
+-               val wires = exprWires dom @ exprWires ran
++               val wires = Exprs.exprWires dom @ Exprs.exprWires ran
+                val inputs =
+ 			   (* tjt97 - can't get the remove duplicates to work
+ 			   was:
+-                    orderedRemduprefs (filter isInput wires)
++                    orderedRemduprefs (Utilities.filter isInput wires)
+ 					*)
+-                    (filter isInput wires)
+-               val Inputs = flatmap (printExpr "not_put") inputs 
++                    (Utilities.filter isInput wires)
++               val Inputs = Utilities.flatmap (printExpr "not_put") inputs 
+                val dummy  = input_table := Inputs
+ 			   (* tjt: separate inputs with "input" *)
+-               val inStr  = concatWith "input " 
++               val inStr  = Utilities.concatWith "input " 
+                  (trimStringList Inputs NUM_NETS ",")
+ 			   (* tjt: prepend inputs with "input" *)
+           in   "input " ^ inStr ^ " "                
+@@ -352,21 +352,21 @@
+ 
+ fun printOutputs (dom, ran)
+         = let  fun isOutput e = (case !e of
+-                                  WIRE (OUT  ,_,_) => true
++                                  Circuittype.WIRE (Circuittype.OUT  ,_,_) => true
+                                 | _                => false
+                                )
+-               val wires = exprWires dom @ exprWires ran
++               val wires = Exprs.exprWires dom @ Exprs.exprWires ran
+                val outputs =
+ 			   (* tjt97 - do not remove duplicates again
+ 			   was:
+-                   orderedRemduprefs (filter isOutput wires)
++                   orderedRemduprefs (Utilities.filter isOutput wires)
+ 				   *)
+-                   (filter isOutput wires)
++                   (Utilities.filter isOutput wires)
+                val Outputs = 
+-                   flatmap (printExpr "not_put") outputs
++                   Utilities.flatmap (printExpr "not_put") outputs
+                val dummy   = output_table := Outputs
+ 			   (* tjt: separate outputs with "output" *)
+-               val inStr = concatWith "output " 
++               val inStr = Utilities.concatWith "output " 
+                   (trimStringList (Outputs) NUM_NETS ",")
+ 			   (* tjt: prepend outputs with "output" *)
+           in  "output " ^ inStr ^ ");\n"                
+@@ -404,7 +404,7 @@
+              val signals = ! signal_table
+              val str     = 
+ 			 (* tjt: separate signals with "wire" *)
+-                 concatWith "wire " 
++                 Utilities.concatWith "wire " 
+                       (trimStringList signals NUM_NETS ",")
+           in "\n// signals\n" ^ str ^ "\n"
+           end
+diff -r 9c58b1a8a60b compiler/printxnf.sml
+--- a/compiler/printxnf.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/printxnf.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -17,7 +17,7 @@
+ 
+ structure Printxnf :
+   sig
+-        val showXNF : pcircuit -> string
++        val showXNF : Circuittype.pcircuit -> string
+   end =
+ struct
+ 
+@@ -25,38 +25,38 @@
+ (**************************************************************************)
+ 
+ 
+-fun showDev NOT  = "INV"
+-  | showDev AND  = "AND"
+-  | showDev OR   = "OR"
+-  | showDev XOR  = "XOR"
+-  | showDev NAND = "NAND"
+-  | showDev NOR  = "NOR"
+-  | showDev XNOR = "XNOR"
+-  | showDev d    = simple_error ("device \"" ^ showDevice d ^
++fun showDev Circuittype.NOT  = "INV"
++  | showDev Circuittype.AND  = "AND"
++  | showDev Circuittype.OR   = "OR"
++  | showDev Circuittype.XOR  = "XOR"
++  | showDev Circuittype.NAND = "NAND"
++  | showDev Circuittype.NOR  = "NOR"
++  | showDev Circuittype.XNOR = "XNOR"
++  | showDev d    = Errors.simple_error ("device \"" ^ Show.showDevice d ^
+                                  "\" not allowed in XNF format")
+ 
+-fun showWire (CON (BOOL false)) = "GND"
+-  | showWire (CON (BOOL true))  = "VCC"
+-  | showWire (CON (INT 0))      = "GND"
+-  | showWire (CON (INT 1))      = "VCC"
+-  | showWire (CON (SYM "?"))    = "GND"
+-  | showWire (CON k)            = simple_error("constant \"" ^ showConst k ^
++fun showWire (Circuittype.CON (Rubytype.BOOL false)) = "GND"
++  | showWire (Circuittype.CON (Rubytype.BOOL true))  = "VCC"
++  | showWire (Circuittype.CON (Rubytype.INT 0))      = "GND"
++  | showWire (Circuittype.CON (Rubytype.INT 1))      = "VCC"
++  | showWire (Circuittype.CON (Rubytype.SYM "?"))    = "GND"
++  | showWire (Circuittype.CON k)            = Errors.simple_error("constant \"" ^ Show.showConst k ^
+                                                "\" not allowed in XNF format")
+-  | showWire (WIRE (_,n,_))     = "ruby_w" ^ Int.toString (n:int)
++  | showWire (Circuittype.WIRE (_,n,_))     = "ruby_w" ^ Int.toString (n:int)
+ 
+-fun showIo (CONST k) = showWire (CON k)
+-  | showIo (VAR s)   = s
++fun showIo (Rubytype.CONST k) = showWire (Circuittype.CON k)
++  | showIo (Rubytype.VAR s)   = s
+ 
+ fun showLatch (input, output)
+-        = let  val outStr = showWire (hd (flattenExpr output))
+-               val inStr  = showWire (hd (flattenExpr input))
+-               val ceStr  = if    (!DATA_xnf_clk_ena) = ""
++        = let  val outStr = showWire (hd (Exprs.flattenExpr output))
++               val inStr  = showWire (hd (Exprs.flattenExpr input))
++               val ceStr  = if    (!Data.DATA_xnf_clk_ena) = ""
+                             then  ""
+-                            else  "PIN,CE,I," ^ !DATA_xnf_clk_ena ^ "\n"
++                            else  "PIN,CE,I," ^ !Data.DATA_xnf_clk_ena ^ "\n"
+           in   "SYM,D_" ^ outStr ^ ",DFF\n" ^
+                "PIN,Q,O," ^ outStr        ^ "\n" ^
+                "PIN,D,I," ^ inStr         ^ "\n" ^
+-               "PIN,C,I," ^ !DATA_xnf_clk ^ "\n" ^
++               "PIN,C,I," ^ !Data.DATA_xnf_clk ^ "\n" ^
+                ceStr ^
+                "END\n"
+           end
+@@ -65,22 +65,22 @@
+ 
+ 
+ 
+-fun showGate (D,               input, output) = showLatch (input, output)
+-  | showGate (DI (BOOL False), input, output) = showLatch (input, output)
+-  | showGate (DI (INT 0),      input, output) = showLatch (input, output)
+-  | showGate (DI (SYM "?"),    input, output) = showLatch (input, output)
++fun showGate (Circuittype.D,               input, output) = showLatch (input, output)
++  | showGate (Circuittype.DI (Rubytype.BOOL False), input, output) = showLatch (input, output)
++  | showGate (Circuittype.DI (Rubytype.INT 0),      input, output) = showLatch (input, output)
++  | showGate (Circuittype.DI (Rubytype.SYM "?"),    input, output) = showLatch (input, output)
+   | showGate (dev,             input, output)
+         = let  val devStr = showDev dev
+-               val outStr = showWire (hd (flattenExpr output))
+-               val inStrs = map showWire (flattenExpr input)
++               val outStr = showWire (hd (Exprs.flattenExpr output))
++               val inStrs = map showWire (Exprs.flattenExpr input)
+           in   if devStr = "INV"
+                  then "SYM,INV_" ^ outStr ^ "," ^ devStr ^ "\n" ^
+                       "PIN,O,O," ^ outStr ^ "\n" ^ "PIN,I,I," ^
+                        hd inStrs ^ "\n" ^ "END\n"
+                  else "SYM," ^ devStr ^ "_" ^ outStr ^ "," ^ devStr ^ "\n" ^
+                       "PIN,O,O," ^ outStr ^ "\n" ^
+-                       concatWith "" (map showPin 
+-                         (pairWithIntsFrom 2 (rev inStrs))) ^
++                       Utilities.concatWith "" (map showPin 
++                         (Utilities.pairWithIntsFrom 2 (rev inStrs))) ^
+                       "END\n"
+           end
+ 
+@@ -88,13 +88,13 @@
+ 
+ (*
+ fun showGate (D,               input, output) = showLatch (input, output)
+-  | showGate (DI (BOOL False), input, output) = showLatch (input, output)
+-  | showGate (DI (INT 0),      input, output) = showLatch (input, output)
++  | showGate (DI (Rubytype.BOOL False), input, output) = showLatch (input, output)
++  | showGate (DI (Rubytype.INT 0),      input, output) = showLatch (input, output)
+   | showGate (DI (SYM "?"),    input, output) = showLatch (input, output)
+   | showGate (dev,             input, output)
+         = let  val devStr = showDev dev
+-               val outStr = showWire (hd (flattenExpr output))
+-               val inStrs = map showWire (flattenExpr input)
++               val outStr = showWire (hd (Exprs.flattenExpr output))
++               val inStrs = map showWire (Exprs.flattenExpr input)
+           in   "SYM," ^ devStr ^ "_" ^ outStr ^ "," ^ devStr ^ "\n" ^
+                "PIN,O,O," ^ outStr ^ "\n" ^
+                concatWith "" (map showPin (pairWithIntsFrom 2 (rev inStrs))) ^
+@@ -109,13 +109,13 @@
+ 
+ (*
+ fun showGate (D,               input, output) = showLatch (input, output)
+-  | showGate (DI (BOOL False), input, output) = showLatch (input, output)
+-  | showGate (DI (INT 0),      input, output) = showLatch (input, output)
++  | showGate (DI (Rubytype.BOOL False), input, output) = showLatch (input, output)
++  | showGate (DI (Rubytype.INT 0),      input, output) = showLatch (input, output)
+   | showGate (DI (SYM "?"),    input, output) = showLatch (input, output)
+   | showGate (dev,             input, output)
+         = let  val devStr = showDev dev
+-               val outStr = showWire (hd (flattenExpr output))
+-               val inStrs = map showWire (flattenExpr input)
++               val outStr = showWire (hd (Exprs.flattenExpr output))
++               val inStrs = map showWire (Exprs.flattenExpr input)
+           in   "SYM," ^ devStr ^ "_" ^ outStr ^ "," ^ devStr ^ "\n" ^
+                "PIN,O,O," ^ outStr ^ "\n" ^
+                concatWith "" (map showPin (pairWithIntsFrom 1 (rev inStrs))) ^
+@@ -130,8 +130,8 @@
+           "END\n"
+ 
+ fun splitName n = let  val n' = explode n
+-                       val loc = takewhile (fn x => x<>(#"_")) n'
+-                       val name = drop (length loc + 1, n')
++                       val loc = Utilities.takewhile (fn x => x<>(#"_")) n'
++                       val name = Utilities.drop (length loc + 1, n')
+                        val nameblock = if    name = []
+                                        then  ""
+                                        else  ",BLKNM=" ^ implode name
+@@ -163,9 +163,9 @@
+           end
+ 
+ fun showOBTbuf (w, s)
+-        = let  val oe = if    !DATA_xnf_out_ena = ""
+-                        then  simple_error ("&xnf_out_ena not defined")
+-                        else  !DATA_xnf_out_ena
++        = let  val oe = if    !Data.DATA_xnf_out_ena = ""
++                        then  Errors.simple_error ("&xnf_out_ena not defined")
++                        else  !Data.DATA_xnf_out_ena
+                val (loc, nameblock) = splitName s
+           in   "SYM,xobuf_" ^ loc ^ ",OBUFT\n" ^
+                "PIN,O,O," ^ loc ^ "\n" ^
+@@ -175,25 +175,25 @@
+                "EXT," ^ loc ^ ",O,,LOC=" ^ loc ^ nameblock ^ "\n"
+           end
+ 
+-fun showConnexion (w, VAR x)
++fun showConnexion (w, Rubytype.VAR x)
+         = (case explode x of
+              (#"i")::(#"_")::loc           => showIbuf  (w, implode loc)
+            | (#"i")::(#"b")::(#"_")::loc      => showIBbuf (w, implode loc)
+            | (#"o")::(#"_")::loc           => showObuf  (w, implode loc)
+            | (#"o")::(#"b")::(#"_")::loc      => showOBbuf (w, implode loc)
+            | (#"o")::(#"b")::(#"t")::(#"_")::loc => showOBTbuf(w, implode loc)
+-           | s                       => simple_error ("invalid IO name: \"" ^
++           | s                       => Errors.simple_error ("invalid IO name: \"" ^
+                                                       implode s ^ "\"")
+           )
+   | showConnexion (w, d)
+         = showIbuf (w, showIo d)
+ 
+ fun showXNF (dom, ran, rels)
+-  = fileContents (!DATA_xnf_header) ^
+-    concatWith ""
+-           (map showGate (concat rels) @
+-            map showConnexion (ioAlias("xnf_domain",dom,!DATA_xnf_domain_io)) @
+-            map showConnexion (ioAlias("xnf_range",ran,!DATA_xnf_range_io))) ^
++  = Utilities.fileContents (!Data.DATA_xnf_header) ^
++    Utilities.concatWith ""
++           (map showGate (Utilities.concat rels) @
++            map showConnexion (IoAlias.ioAlias("xnf_domain",dom,!Data.DATA_xnf_domain_io)) @
++            map showConnexion (IoAlias.ioAlias("xnf_range",ran,!Data.DATA_xnf_range_io))) ^
+     "EOF\n"
+ 
+ (**************************************************************************)
+diff -r 9c58b1a8a60b compiler/rc.x86-linux
+Binary file compiler/rc.x86-linux has changed
+diff -r 9c58b1a8a60b compiler/ruby.lex.sml
+--- a/compiler/ruby.lex.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/ruby.lex.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -758,7 +758,8 @@
+ | 164 => (Tokens.FLOAT(ator yytext, !pos, inccol (strlen yytext)))
+ | 17 => (Tokens.EQUAL(!pos, inccol 1))
+ | 171 => (Tokens.FLOAT(~(ator (strtl yytext)), !pos, inccol (strlen yytext)))
+-| 173 => (lex_error (!pos, "Bad character: "^yytext);
++         (* tjt, Jan 2014*)
++| 173 => (Errors.lex_error (!pos, "Bad character: "^yytext);
+                            inccol 1;
+                            lex())
+ | 19 => (Tokens.DOT(!pos, inccol 1))
+diff -r 9c58b1a8a60b compiler/ruby.sml
+--- a/compiler/ruby.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/ruby.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -14,7 +14,8 @@
+                             structure LrParser = LrParser)
+ 
+ val invoke = fn lexstream => 
+-    RubyParser.parse(0,lexstream,parse_error,())
++(* tjt, Jan 2014 *)
++    RubyParser.parse(0,lexstream,Errors.parse_error,())
+ 
+ fun input_line k = fn f:int =>
+     let fun loop result =
+diff -r 9c58b1a8a60b compiler/ruby.yacc.sml
+--- a/compiler/ruby.yacc.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/ruby.yacc.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -773,25 +773,29 @@
+  in (LrTable.NT 14,(result,ID1left,IDS1right),rest671) end
+ | (47,(_,(MlyValue.ID ID1,ID1left,ID1right))::rest671) => let val 
+ result=MlyValue.APPEXP(fn _ => let val ID as ID1=ID1 ()
+- in (aVAR(ID)) end
++(* tjt, Jan 2014 *)
++ in (Rubytype.aVAR(ID)) end
+ )
+  in (LrTable.NT 16,(result,ID1left,ID1right),rest671) end
+ | (48,(_,(MlyValue.CON CON1,CON1left,CON1right))::rest671) => let val 
+ result=MlyValue.APPEXP(fn _ => let val CON as CON1=CON1 ()
+- in (aCONST(CON)) end
++(* tjt, Jan 2014 *)
++ in (Rubytype.aCONST(CON)) end
+ )
+  in (LrTable.NT 16,(result,CON1left,CON1right),rest671) end
+ | (49,(_,(MlyValue.APPTUPLE APPTUPLE1,APPTUPLE1left,APPTUPLE1right))::
+ rest671) => let val result=MlyValue.APPEXP(fn _ => let val APPTUPLE
+  as APPTUPLE1=APPTUPLE1 ()
+- in (aPROD(APPTUPLE)) end
++(* tjt, Jan 2014 *)
++ in (Rubytype.aPROD(APPTUPLE)) end
+ )
+  in (LrTable.NT 16,(result,APPTUPLE1left,APPTUPLE1right),rest671) end
+ | (50,(_,(MlyValue.APPEXP APPEXP1,_,APPEXP1right))::_::(_,(
+ MlyValue.EXP EXP1,_,_))::(_,(_,QUOTE1left,_))::rest671) => let val 
+ result=MlyValue.APPEXP(fn _ => let val EXP as EXP1=EXP1 ()
+ val APPEXP as APPEXP1=APPEXP1 ()
+- in (aAPP(EXP,APPEXP)) end
++(* tjt, Jan 2014 *)
++ in (Rubytype.aAPP(EXP,APPEXP)) end
+ )
+  in (LrTable.NT 16,(result,QUOTE1left,APPEXP1right),rest671) end
+ | (51,(_,(_,_,RPAREN1right))::(_,(MlyValue.APPEXP APPEXP2,_,_))::(_,(
+@@ -800,7 +804,8 @@
+ let val APPEXP1=APPEXP1 ()
+ val INFIX as INFIX1=INFIX1 ()
+ val APPEXP2=APPEXP2 ()
+- in (aAPP(Var(implode(tl(explode(INFIX)))),aPROD([APPEXP1,APPEXP2])))
++(* tjt, Jan 2014 *)
++ in (Rubytype.aAPP(Rubytype.Var(implode(tl(explode(INFIX)))),Rubytype.aPROD([APPEXP1,APPEXP2])))
+  end
+ )
+  in (LrTable.NT 16,(result,LPAREN1left,RPAREN1right),rest671) end
+diff -r 9c58b1a8a60b compiler/show.sml
+--- a/compiler/show.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/show.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -15,65 +15,65 @@
+ 
+ structure Show :
+   sig
+-        val showConst  : const -> string
+-        val showDevice : device -> string
++        val showConst  : Rubytype.const -> string
++        val showDevice : Circuittype.device -> string
+   end =
+ struct
+ 
+ (**************************************************************************)
+ (**************************************************************************)
+ 
+-fun showConst (BOOL true)        = "T"
+-  | showConst (BOOL false)       = "F"
+-  | showConst (INT i)            = Int.toString i
+-  | showConst (REAL n)           = Real.toString n
+-  | showConst (SYM s)            = s
++fun showConst (Rubytype.BOOL true)        = "T"
++  | showConst (Rubytype.BOOL false)       = "F"
++  | showConst (Rubytype.INT i)            = Int.toString i
++  | showConst (Rubytype.REAL n)           = Real.toString n
++  | showConst (Rubytype.SYM s)            = s
+ 
+-fun showDevice D                 = "D ?"
+-  | showDevice (DI k)            = "D "    ^ showConst k
+-  | showDevice (MUX n)           = "MUXR "  ^ Int.toString n
+-  | showDevice (SDPR n)          = "sdpr " ^ Int.toString n
+-  | showDevice (PDSR n)          = "pdsr " ^ Int.toString n
+-  | showDevice NOT               = "not"
+-  | showDevice AND               = "and"
+-  | showDevice OR                = "or"
+-  | showDevice XOR               = "xor"
+-  | showDevice NAND              = "nand"
+-  | showDevice NOR               = "nor"
+-  | showDevice XNOR              = "xnor"
+-  | showDevice LT                = "ltn"
+-  | showDevice GT                = "gtn"
+-  | showDevice LE                = "leq"
+-  | showDevice GE                = "geq"
+-  | showDevice EQ                = "eq"
+-  | showDevice IF                = "if"
+-  | showDevice BTOI              = "bit2int"
+-  | showDevice ITOB              = "int2bit"
+-  | showDevice ADD               = "add"
+-  | showDevice SUB               = "minus"
+-  | showDevice MULT              = "mult"
+-  | showDevice DIV               = "div"
+-  | showDevice MOD               = "mod"
+-  | showDevice EXP               = "exp"
+-  | showDevice LOG               = "log"
+-  | showDevice MAX               = "max"
+-  | showDevice MIN               = "min"
+-  | showDevice GCD               = "gcd"
+-  | showDevice FAC               = "fac"
+-  | showDevice DEC               = "dec"
+-  | showDevice INC               = "inc"
+-  | showDevice AD                = "AD"
+-  | showDevice ABS               = "abs"
+-  | showDevice REAL2INT          = "real2int"
+-  | showDevice INT2REAL          = "int2real"
+-  | showDevice (BIT2UINT n)      = "bit2uint "
+-  | showDevice (BIT2SINT n)      = "bit2sint "
+-  | showDevice (UINT2BIT n)      = "uint2bit " ^ Int.toString n
+-  | showDevice (SINT2BIT n)      = "sint2bit " ^ Int.toString n
+-  | showDevice (BIT2UREAL (m,n)) = "bit2ureal "
+-  | showDevice (BIT2SREAL (m,n)) = "bit2sreal "
+-  | showDevice (UREAL2BIT (m,n)) = "ureal2bit " ^ Int.toString m ^ " " ^ Int.toString n
+-  | showDevice (SREAL2BIT (m,n)) = "sreal2bit " ^ Int.toString m ^ " " ^ Int.toString n
++fun showDevice Circuittype.D                 = "D ?"
++  | showDevice (Circuittype.DI k)            = "D "    ^ showConst k
++  | showDevice (Circuittype.MUX n)           = "MUXR "  ^ Int.toString n
++  | showDevice (Circuittype.SDPR n)          = "sdpr " ^ Int.toString n
++  | showDevice (Circuittype.PDSR n)          = "pdsr " ^ Int.toString n
++  | showDevice Circuittype.NOT               = "not"
++  | showDevice Circuittype.AND               = "and"
++  | showDevice Circuittype.OR                = "or"
++  | showDevice Circuittype.XOR               = "xor"
++  | showDevice Circuittype.NAND              = "nand"
++  | showDevice Circuittype.NOR               = "nor"
++  | showDevice Circuittype.XNOR              = "xnor"
++  | showDevice Circuittype.LT                = "ltn"
++  | showDevice Circuittype.GT                = "gtn"
++  | showDevice Circuittype.LE                = "leq"
++  | showDevice Circuittype.GE                = "geq"
++  | showDevice Circuittype.EQ                = "eq"
++  | showDevice Circuittype.IF                = "if"
++  | showDevice Circuittype.BTOI              = "bit2int"
++  | showDevice Circuittype.ITOB              = "int2bit"
++  | showDevice Circuittype.ADD               = "add"
++  | showDevice Circuittype.SUB               = "minus"
++  | showDevice Circuittype.MULT              = "mult"
++  | showDevice Circuittype.DIV               = "div"
++  | showDevice Circuittype.MOD               = "mod"
++  | showDevice Circuittype.EXP               = "exp"
++  | showDevice Circuittype.LOG               = "log"
++  | showDevice Circuittype.MAX               = "max"
++  | showDevice Circuittype.MIN               = "min"
++  | showDevice Circuittype.GCD               = "gcd"
++  | showDevice Circuittype.FAC               = "fac"
++  | showDevice Circuittype.DEC               = "dec"
++  | showDevice Circuittype.INC               = "inc"
++  | showDevice Circuittype.AD                = "AD"
++  | showDevice Circuittype.ABS               = "abs"
++  | showDevice Circuittype.REAL2INT          = "real2int"
++  | showDevice Circuittype.INT2REAL          = "int2real"
++  | showDevice (Circuittype.BIT2UINT n)      = "bit2uint "
++  | showDevice (Circuittype.BIT2SINT n)      = "bit2sint "
++  | showDevice (Circuittype.UINT2BIT n)      = "uint2bit " ^ Int.toString n
++  | showDevice (Circuittype.SINT2BIT n)      = "sint2bit " ^ Int.toString n
++  | showDevice (Circuittype.BIT2UREAL (m,n)) = "bit2ureal "
++  | showDevice (Circuittype.BIT2SREAL (m,n)) = "bit2sreal "
++  | showDevice (Circuittype.UREAL2BIT (m,n)) = "ureal2bit " ^ Int.toString m ^ " " ^ Int.toString n
++  | showDevice (Circuittype.SREAL2BIT (m,n)) = "sreal2bit " ^ Int.toString m ^ " " ^ Int.toString n
+ 
+ (**************************************************************************)
+ (**************************************************************************)
+diff -r 9c58b1a8a60b compiler/test_par.hs
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ b/compiler/test_par.hs	Fri Jan 17 01:24:45 2014 +0000
+@@ -0,0 +1,36 @@
++-- test of par algorithm in Haskell
++-- taken from definition of par in compose.sml
++
++-- SML version, for reference
++--fun par ps = let  fun par' []      = ([], [], [])
++--                    | par' (p::ps) = let  val (dom,  ran,  rel)  = p
++--                                          val (doms, rans, rels) = par' ps
++--                                     in   (dom::doms, ran::rans, rel@rels)
++--                                     end
++--                  val (ds, rs, relation) = par' ps
++--             in   (list ds, list rs, relation)
++--             end
++--
++
++
++-- Haskell version
++--par ps =
++--	let (ds, rs, relation) = par' ps
++--	in (ds, rs, relation)
++
++
++par' [] = ([], [], [])
++par' (p:ps) = let (dom, ran, rel) = p in
++			  let (doms, rans, rels) = par' ps in
++				(dom:doms, ran:rans, rel++rels)
++
++-- equiv of fst, snd for 3-elem tuples
++fst3 (a, b, c) = a
++snd3 (a, b, c) = b
++thd3 (a, b, c) = c
++
++-- equivalent using above defs
++mypar l = (map fst3 l, map snd3 l, concat $ map thd3 l)
++
++-- and another
++mypar2 l = (\(a, b, c) -> (a, b, concat c)) $ unzip3 l
+diff -r 9c58b1a8a60b compiler/values.sml
+--- a/compiler/values.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/values.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -10,14 +10,15 @@
+   sig
+         type value
+ 
+-        val CONSTANT : const           -> value
+-        val CIRCUIT  : (unit->circuit) -> value
++(* tjt, Jan 2014 *)
++        val CONSTANT : Rubytype.const           -> value
++        val CIRCUIT  : (unit->Circuittype.circuit) -> value
+         val FUNCTION : (value->value)  -> value
+ 
+-        val value2circuit : value -> circuit
+-        val value2const   : value -> const
++        val value2circuit : value -> Circuittype.circuit
++        val value2const   : value -> Rubytype.const
+ 	val value2bool    : value -> bool
+-        val value2num     : value -> const
++        val value2num     : value -> Rubytype.const
+         val value2int     : value -> int
+         val value2nat     : value -> int
+         val apply         : (value * value list) -> (value * value list)
+@@ -33,8 +34,9 @@
+ (***                                                                    ***)
+ (**************************************************************************)
+ 
+-datatype value = CONSTANT of const
+-               | CIRCUIT  of unit -> circuit
++datatype value = CONSTANT of Rubytype.const
++               | CIRCUIT  of unit -> Circuittype.circuit
++(* tjt, Jan 2014 *)
+                | FUNCTION of value -> value
+ 
+ (**************************************************************************)
+@@ -44,9 +46,10 @@
+ (***                                                                    ***)
+ (**************************************************************************)
+ 
+-fun prim_error s = def_error ("\"" ^ !CurrentPrim ^ "\" applied to " ^ s)
++(* tjt, Jan 2014 *)
++fun prim_error s = Errors.def_error ("\"" ^ !State.CurrentPrim ^ "\" applied to " ^ s)
+ 
+-fun value2circuit (CONSTANT d) = let  val e = con d
++fun value2circuit (CONSTANT d) = let  val e = Exprs.con d
+                                  in   (e, e, [])
+                                  end
+   | value2circuit (CIRCUIT c)  = c ()
+@@ -58,25 +61,26 @@
+ 
+ fun value2num v = let  val k = value2const v
+                   in   (case k of
+-                          INT _  => k
+-                        | REAL _ => k
+-                        | SYM _  => prim_error "symbol"
+-                        | BOOL _ => prim_error "boolean"
++                          Rubytype.INT _  => k
++                        | Rubytype.REAL _ => k
++                        | Rubytype.SYM _  => prim_error "symbol"
++                        | Rubytype.BOOL _ => prim_error "boolean"
++(* tjt, Jan 2014 *)
+                        )
+                   end
+ 
+ fun value2bool v = (case value2num v of
+-                      INT _      => prim_error "integer"
+-                    | REAL _     => prim_error "real number"
+-                    | SYM _      => prim_error "symbol"
+-                    | BOOL b     => b
++                      Rubytype.INT _      => prim_error "integer"
++                    | Rubytype.REAL _     => prim_error "real number"
++                    | Rubytype.SYM _      => prim_error "symbol"
++                    | Rubytype.BOOL b     => b
+                    )
+ 
+ fun value2int v = (case value2num v of
+-                     INT i      => i
+-                   | REAL _     => prim_error "real number"
+-                   | SYM _      => prim_error "symbol"
+-                   | BOOL _     => prim_error "boolean"
++                     Rubytype.INT i      => i
++                   | Rubytype.REAL _     => prim_error "real number"
++                   | Rubytype.SYM _      => prim_error "symbol"
++                   | Rubytype.BOOL _     => prim_error "boolean"
+                   )
+ 
+ fun value2nat v = let  val i = value2int v
+diff -r 9c58b1a8a60b compiler/wiringPrims.sml
+--- a/compiler/wiringPrims.sml	Thu Jan 16 00:36:06 2014 +0000
++++ b/compiler/wiringPrims.sml	Fri Jan 17 01:24:45 2014 +0000
+@@ -8,7 +8,7 @@
+ 
+ structure WiringPrims :
+   sig
+-        val append      : (int * int) -> value
++        val append      : (int * int) -> Values.value
+   end =
+ struct
+ 
+@@ -18,10 +18,10 @@
+ (*                                                           |            *)
+ (*                                                           V            *)
+ 
+-fun append (m, n) = CIRCUIT (fn () => let  val xs = polyList 2 m
+-                                           val ys = polyList 2 n
+-                                      in   (list [list xs, list ys],
+-                                            list (xs@ys),
++fun append (m, n) = Values.CIRCUIT (fn () => let  val xs = Exprs.polyList 2 m
++                                           val ys = Exprs.polyList 2 n
++                                      in   (Exprs.list [Exprs.list xs, Exprs.list ys],
++                                            Exprs.list (xs@ys),
+                                             [])
+                                       end
+                             )

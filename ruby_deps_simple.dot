@@ -1,0 +1,231 @@
+/*
+ *
+ * dependencies of ruby compiler
+ *
+ *
+ */
+
+
+
+digraph G {
+
+	printblk -> ioalias;
+	printxnf -> ioalias;
+	all -> ioalias;
+
+
+	compileExp -> ios;
+
+
+	compileDef -> compileExp;
+
+	main -> compileDef;
+
+	main -> printblk;
+	main -> printedf;
+	main -> printalx;
+	main -> printxnf;
+	main -> printrbs;
+	main -> printvhd;
+
+
+	main -> state;
+	messages -> state;
+	test -> state;
+	compileDef -> state;
+	compileExp -> state;
+	messages -> state;
+	values -> state;
+	blifout -> state;
+
+
+	compileDef -> arithPrims;
+
+
+	arithPrims -> circuitType;
+	blifout -> circuitType;
+	compileDef -> circuitType;
+	compileExp -> circuitType;
+	compose -> circuitType;
+	errors -> circuitType;
+	exprs -> circuitType;
+	ioalias -> circuitType;
+	main -> circuitType;
+	order -> circuitType;
+	primTypes -> circuitType;
+	printalx -> circuitType;
+	printblk -> circuitType;
+	printedf -> circuitType;
+	printrbs -> circuitType;
+	printvhd -> circuitType;
+	printxnf -> circuitType;
+	show -> circuitType;
+	values -> circuitType;
+	wiringPrims -> circuitType;
+
+
+	base -> compose;
+	blifout -> compose;
+	circuitType -> compose;
+	compileDef -> compose;
+	compileExp -> compose;
+	compose -> compose;
+	errors -> compose;
+	main -> compose;
+	messages -> compose;
+	order -> compose;
+	primTypes -> compose;
+	printvhd -> compose;
+	ruby_lex -> compose;
+	ruby -> compose;
+	ruby_yacc -> compose;
+	rubytype -> compose;
+	values -> compose;
+	blifout -> compose;
+	circuitType -> compose;
+	compileExp -> compose;
+	compose -> compose;
+	errors -> compose;
+	messages -> compose;
+	order -> compose;
+	ruby_yacc -> compose;
+	rubytype -> compose;
+
+
+	printalx -> data;
+	printblk -> data;
+	printxnf -> data;
+	compileDef -> data;
+
+
+	arithPrims -> errors;
+	compileDef -> errors;
+	compileExp -> errors;
+	messages -> errors;
+	data -> errors;
+	errors -> errors;
+	ioalias -> errors;
+	main -> errors;
+	messages -> errors;
+	printalx -> errors;
+	printblk -> errors;
+	printxnf -> errors;
+	compose -> errors;
+	messages -> errors;
+	main -> errors;
+	ruby_lex -> errors;
+	ruby -> errors;
+	order -> errors;
+	values -> errors;
+
+
+	base -> exprs;
+	circuitType -> exprs;
+	compileExp -> exprs;
+	compose -> exprs;
+	exprs -> exprs;
+	order -> exprs;
+	primTypes -> exprs;
+	printalx -> exprs;
+	printedf -> exprs;
+	printrbs -> exprs;
+	printvhd -> exprs;
+	test -> exprs;
+	wiringPrims -> exprs;
+	printrbs -> exprs;
+	printvhd -> exprs;
+	printblk -> exprs;
+	printxnf -> exprs;
+
+
+	compileDef -> mappings;
+	compileExp -> mappings;
+	values -> mappings;
+	circuitType -> mappings;
+	compose -> mappings;
+	main -> mappings;
+	printrbs -> mappings;
+	printvhd -> mappings;
+	ruby_lex -> mappings;
+	ruby_yacc -> mappings;
+	state -> mappings;
+	main -> mappings;
+	state -> mappings;
+
+
+	mappings -> maybe;
+	compileDef -> maybe;
+
+
+	compileExp -> messages;
+
+
+	main -> messages;
+	main -> order;
+
+
+	compileDef -> primTypes;
+
+
+	compileDef -> rubytype;
+	main -> rubytype;
+	ruby_yacc -> rubytype;
+
+
+	base -> circuitType;
+	blifout -> circuitType;
+	circuitType -> circuitType;
+	compileDef -> circuitType;
+	compileExp -> circuitType;
+	compose -> circuitType;
+	exprs -> circuitType;
+	ioalias -> circuitType;
+	main -> circuitType;
+	mappings -> circuitType;
+	order -> circuitType;
+	printalx -> circuitType;
+	printblk -> circuitType;
+	printedf -> circuitType;
+	printrbs -> circuitType;
+	printvhd -> circuitType;
+	printxnf -> circuitType;
+	ruby_lex -> circuitType;
+	ruby_yacc -> circuitType;
+	rubytype -> circuitType;
+	show -> circuitType;
+
+
+	ioalias -> show;
+	printalx -> show;
+	printblk -> show;
+	printedf -> show;
+	printrbs -> show;
+	printvhd -> show;
+	printxnf -> show;
+	order -> show;
+
+
+	arithPrims -> values;
+	blifout -> values;
+	circuitType -> values;
+	compileDef -> values;
+	compileExp -> values;
+	compose -> values;
+	errors -> values;
+	exprs -> values;
+	ioalias -> values;
+	main -> values;
+	order -> values;
+	primTypes -> values;
+	printalx -> values;
+	printblk -> values;
+	printedf -> values;
+	printrbs -> values;
+	printvhd -> values;
+	printxnf -> values;
+	show -> values;
+	wiringPrims -> values;
+
+
+	compileDef -> wiringPrims;
+};

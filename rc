@@ -1,0 +1,2 @@
+#!/bin/sh
+sml @SMLload=./rc.x86-linux $*

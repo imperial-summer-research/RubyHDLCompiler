@@ -1,0 +1,2 @@
+#!/bin/sh
+/usr/bin/sml @SMLload=/homes/wl/ruby/compiler/rc.x86-linux $*

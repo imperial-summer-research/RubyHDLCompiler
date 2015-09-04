@@ -1,0 +1,22 @@
+#!/bin/sh
+# this version checks version of SML is at least that required
+# note versions < 110.78 have 32-bit inode bug (input file not found if its
+# inode happens to be > 2^32)
+SML_EXE=/usr/bin/sml
+RUBY_BYTECODE=/homes/tjt97/ruby/compiler/rc.x86-linux
+# required version of SML
+SML_MAJOR_REQD=110
+SML_MINOR_REQD=78
+# actual version of SML
+SML_MAJOR_VERSION=`($SML_EXE @SMLversion) | tr '.' ' ' | awk '{print $2}'`
+SML_MINOR_VERSION=`($SML_EXE @SMLversion) | tr '.' ' ' | awk '{print $3}'`
+echo "SML_VER=" $SML_MAJOR_VERSION $SML_MINOR_VERSION
+# check we have at least required version of SML
+if [ $SML_MAJOR_VERSION -gt $SML_MAJOR_REQD -o    \
+     $SML_MAJOR_VERSION -eq $SML_MAJOR_REQD -a    \
+	    $SML_MINOR_VERSION -ge $SML_MINOR_REQD ]; then
+	/usr/bin/sml @SMLload=$RUBY_BYTECODE  $*
+else
+	echo "ERROR: need SML/NJ version >= $SML_MAJOR_REQD.$SML_MINOR_REQD"
+	exit 127
+fi

@@ -1,0 +1,319 @@
+/*
+ *
+ * dependencies of ruby compiler
+ *
+ *
+ */
+
+
+
+digraph G {
+
+	printblk -> ioalias;
+	printxnf -> ioalias;
+	all -> ioalias;
+
+	compileExp -> ios;
+
+	compileDef -> compileExp [label = "exp2value"];
+
+	main -> compileDef [label = "storeDef, globalDef"];
+
+	main -> printblk [label = "showBLK"];
+	main -> printedf [label = "showEDF"];
+	main -> printalx [label = "showALX"];
+	main -> printxnf [label = "showXNF"];
+	main -> printrbs [label = "showRBS"];
+	main -> printvhd [label = "showVHDL"];
+
+	main -> state [label = "sourceFiles, IncludeFiles, CurrentPrim"];
+	messages -> state [label = "sourceFiles"];
+	test -> state [label = "***"];
+
+	compileDef -> state [label = "IncludeFiles, CurrentPrim, Testing, DefTabSize, pushFun, popFun"];
+
+	compileExp -> state [label = "CurrentPrim, pushFun, popFun"];
+
+	messages -> state [label = "FunStack"];
+
+	values -> state [label = "CurrentPrim"];
+
+	blifout -> state [label = "Testing"];
+
+	compileDef -> arithPrims [label = "***"];
+
+	compileExp -> circuitType [label = "device"];
+	ioalias -> circuitType [label = "device"];
+	order -> circuitType [label = "device"];
+	primTypes -> circuitType [label = "device"];
+	printalx -> circuitType [label = "device"];
+	printblk -> circuitType [label = "device"];
+	printedf -> circuitType [label = "device"];
+	printrbs -> circuitType [label = "device"];
+	printvhd -> circuitType [label = "device"];
+	printxnf -> circuitType [label = "device"];
+	show -> circuitType [label = "device"];
+
+	compose -> circuitType [label = "exprtype"];
+	exprs -> circuitType [label = "exprtype"];
+	ioalias -> circuitType [label = "exprtype"];
+
+	compose -> circuitType [label = "dir"];
+	order -> circuitType [label = "dir"];
+	printalx -> circuitType [label = "dir"];
+	printedf -> circuitType [label = "dir"];
+	printrbs -> circuitType [label = "dir"];
+
+
+	compileDef -> circuitType [label = "expr"];
+	compileExp -> circuitType [label = "expr"];
+	compose -> circuitType [label = "expr"];
+	ioalias -> circuitType [label = "expr"];
+	exprs -> circuitType [label = "expr"];
+	order -> circuitType [label = "expr"];
+	primTypes -> circuitType [label = "expr"];
+	printalx -> circuitType [label = "expr"];
+	printblk -> circuitType [label = "expr"];
+	printedf -> circuitType [label = "expr"];
+	printrbs -> circuitType [label = "expr"];
+	printvhd -> circuitType [label = "expr"];
+	printxnf -> circuitType [label = "expr"];
+
+	blifout -> circuitType [label = "gate"];
+	compileExp -> circuitType [label = "gate"];
+	compose -> circuitType [label = "gate"];
+	main -> circuitType [label = "gate"];
+	order -> circuitType [label = "gate"];
+	printalx -> circuitType [label = "gate"];
+	printblk -> circuitType [label = "gate"];
+	printedf -> circuitType [label = "gate"];
+	printrbs -> circuitType [label = "gate"];
+	printvhd -> circuitType [label = "gate"];
+	printxnf -> circuitType [label = "gate"];
+
+	compose -> circuitType [label = "relation"];
+	order -> circuitType [label = "relation"];
+	printrbs -> circuitType [label = "relation"];
+	printvhd -> circuitType [label = "relation"];
+
+
+	arithPrims -> circuitType [label = "circuit"];
+	blifout -> circuitType [label = "circuit"];
+	compileDef -> circuitType [label = "circuit"];
+	compileExp -> circuitType [label = "circuit"];
+	compose -> circuitType [label = "circuit"];
+	errors -> circuitType [label = "circuit"];
+	ioalias -> circuitType [label = "circuit"];
+	main -> circuitType [label = "circuit"];
+	order -> circuitType [label = "circuit"];
+	primTypes -> circuitType [label = "circuit"];
+	printalx -> circuitType [label = "circuit"];
+	printblk -> circuitType [label = "circuit"];
+	printedf -> circuitType [label = "circuit"];
+	printrbs -> circuitType [label = "circuit"];
+	printvhd -> circuitType [label = "circuit"];
+	printxnf -> circuitType [label = "circuit"];
+	show -> circuitType [label = "circuit"];
+	values -> circuitType [label = "circuit"];
+	wiringPrims -> circuitType [label = "circuit"];
+
+	main -> circuitType [label = "pcircuit"];
+	order -> circuitType [label = "pcircuit"];
+	printalx -> circuitType [label = "pcircuit"];
+	printblk -> circuitType [label = "pcircuit"];
+	printedf -> circuitType [label = "pcircuit"];
+	printrbs -> circuitType [label = "pcircuit"];
+	printvhd -> circuitType [label = "pcircuit"];
+	printxnf -> circuitType [label = "pcircuit"];
+
+	base -> compose [label = "par"];
+	blifout -> compose [label = "par"];
+	circuitType -> compose [label = "par"];
+	compileDef -> compose [label = "par"];
+	compileExp -> compose [label = "par"];
+	compose -> compose [label = "par"];
+	errors -> compose [label = "par"];
+	main -> compose [label = "par"];
+	messages -> compose [label = "par"];
+	order -> compose [label = "par"];
+	primTypes -> compose [label = "par"];
+	printvhd -> compose [label = "par"];
+	ruby_lex -> compose [label = "par"];
+	ruby -> compose [label = "par"];
+	ruby_yacc -> compose [label = "par"];
+	rubytype -> compose [label = "par"];
+	values -> compose [label = "par"];
+
+	blifout -> compose [label = "seq"];
+	circuitType -> compose [label = "seq"];
+	compileExp -> compose [label = "seq"];
+	compose -> compose [label = "seq"];
+	errors -> compose [label = "seq"];
+	messages -> compose [label = "seq"];
+	order -> compose [label = "seq"];
+	ruby_yacc -> compose [label = "seq"];
+	rubytype -> compose [label = "seq"];
+
+	printalx -> data [label = "DATA_alx_*"];
+	printblk -> data [label = "DATA_blk_*"];
+	printxnf -> data [label = "DATA_xnf_*"];
+	compileDef -> data [label = "recordData"];
+
+	arithPrims -> errors [label = "DEF_ERROR"];
+	compileDef -> errors [label = "DEF_ERROR"];
+	compileExp -> errors [label = "DEF_ERROR"];
+	errors -> errors [label = "DEF_ERROR"];
+	messages -> errors [label = "DEF_ERROR"];
+	values -> errors [label = "DEF_ERROR"];
+
+	data -> errors [label = "SIMPLE_ERROR"];
+	errors -> errors [label = "SIMPLE_ERROR"];
+	ioalias -> errors [label = "SIMPLE_ERROR"];
+	main -> errors [label = "SIMPLE_ERROR"];
+	messages -> errors [label = "SIMPLE_ERROR"];
+	printalx -> errors [label = "SIMPLE_ERROR"];
+	printblk -> errors [label = "SIMPLE_ERROR"];
+	printxnf -> errors [label = "SIMPLE_ERROR"];
+
+	compose -> errors [label = "SEQ_ERROR"];
+	messages -> errors [label = "SEQ_ERROR"];
+
+	main -> errors [label = "USAGE_ERROR"];
+	messages -> errors [label = "USAGE_ERROR"];
+
+
+	messages -> errors [label = "LEX_ERROR"];
+	ruby_lex -> errors [label = "LEX_ERROR"];
+
+	messages -> errors [label = "PARSE_ERROR"];
+	ruby -> errors [label = "PARSE_ERROR"];
+
+	messages -> errors [label = "LOOP_ERROR"];
+	order -> errors [label = "LOOP_ERROR"];
+
+	compileExp -> errors [label = "TextPosition"];
+	messages -> errors [label = "TextPosition"];
+
+	order -> exprs [label = "MonoWireCount"];
+	test -> exprs [label = "MonoWireCount"];
+
+	test -> exprs [label = "PolyWireCount"];
+
+	primTypes -> exprs [label = "monoIn"];
+	primTypes -> exprs [label = "monoInList"];
+	primTypes -> exprs [label = "monoOut"];
+	primTypes -> exprs [label = "monoOutList"];
+	printalx -> exprs [label = "monoOut"];
+
+	base -> exprs [label = "poly"];
+	circuitType -> exprs [label = "poly"];
+	compileExp -> exprs [label = "poly"];
+	compose -> exprs [label = "poly"];
+	exprs -> exprs [label = "poly"];
+	printalx -> exprs [label = "poly"];
+	printedf -> exprs [label = "poly"];
+	printrbs -> exprs [label = "poly"];
+	printvhd -> exprs [label = "poly"];
+	test -> exprs [label = "poly"];
+	wiringPrims -> exprs [label = "poly"];
+
+	wiringPrims -> exprs [label = "polyList"];
+
+	order -> exprs [label = "exprInputs"];
+	order -> exprs [label = "exprOutputs"];
+
+	order -> exprs [label = "exprWires"];
+	printrbs -> exprs [label = "exprWires"];
+	printvhd -> exprs [label = "exprWires"];
+
+	printblk -> exprs [label = "flattenExpr"];
+	printxnf -> exprs [label = "flattenExpr"];
+
+	compose -> exprs [label = "endCount"];
+
+	compileDef -> mappings [label = "mapping"];
+	compileExp -> mappings [label = "mapping"];
+	values -> mappings [label = "mapping"];
+
+	circuitType -> mappings [label = "table"];
+	compileDef -> mappings [label = "table"];
+	compose -> mappings [label = "table"];
+	main -> mappings [label = "table"];
+	printrbs -> mappings [label = "table"];
+	printvhd -> mappings [label = "table"];
+	ruby_lex -> mappings [label = "table"];
+	ruby_yacc -> mappings [label = "table"];
+	state -> mappings [label = "table"];
+
+	compileDef -> mappings [label = "extendMapping"];
+	compileExp -> mappings [label = "extendMapping"];
+
+	compileExp -> mappings [label = "pairs2Mapping"];
+
+	compileDef -> mappings [label = "newTable"];
+
+	compileDef -> mappings [label = "store"];
+	main -> mappings [label = "store"];
+	state -> mappings [label = "store"];
+
+	compileDef -> mappings [label = "lookup"];
+	ruby_yacc -> mappings [label = "lookup"];
+
+	mappings -> maybe [label = "maybe"];
+
+	compileDef -> maybe [label = "success"];
+
+	compileDef -> maybe [label = "failure"];
+	mappings -> maybe [label = "failure"];
+
+	compileDef -> maybe [label = "successful"];
+
+	compileExp -> messages [label = "message"];
+	main -> messages [label = "message"];
+
+	main -> order [label = "circuit2pcircuit"];
+
+	compileDef -> primTypes [label = "***"];
+
+	compileDef -> rubytype [label = "defn"];
+	main -> rubytype [label = "defn"];
+	ruby_yacc -> rubytype [label = "defn"];
+
+	base -> circuitType [label = "circuit"];
+	blifout -> circuitType [label = "circuit"];
+	circuitType -> circuitType [label = "circuit"];
+	compileDef -> circuitType [label = "circuit"];
+	compileExp -> circuitType [label = "circuit"];
+	compose -> circuitType [label = "circuit"];
+	exprs -> circuitType [label = "circuit"];
+	ioalias -> circuitType [label = "circuit"];
+	main -> circuitType [label = "circuit"];
+	mappings -> circuitType [label = "circuit"];
+	order -> circuitType [label = "circuit"];
+	printalx -> circuitType [label = "circuit"];
+	printblk -> circuitType [label = "circuit"];
+	printedf -> circuitType [label = "circuit"];
+	printrbs -> circuitType [label = "circuit"];
+	printvhd -> circuitType [label = "circuit"];
+	printxnf -> circuitType [label = "circuit"];
+	ruby_lex -> circuitType [label = "circuit"];
+	ruby_yacc -> circuitType [label = "circuit"];
+	rubytype -> circuitType [label = "circuit"];
+	show -> circuitType [label = "circuit"];
+
+	ioalias -> show [label = "showConst"];
+	printalx -> show [label = "showConst"];
+	printblk -> show [label = "showConst"];
+	printedf -> show [label = "showConst"];
+	printrbs -> show [label = "showConst"];
+	printvhd -> show [label = "showConst"];
+	printxnf -> show [label = "showConst"];
+
+
+	order -> show [label = "showConst"];
+	printalx -> show [label = "showConst"];
+	printblk -> show [label = "showConst"];
+	printrbs -> show [label = "showConst"];
+	printvhd -> show [label = "showConst"];
+	printxnf -> show [label = "showConst"];
+};

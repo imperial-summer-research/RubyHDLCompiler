@@ -1,0 +1,79 @@
+History:
+
+04/09/93 - add $mod: alter arithPrims.sml, compiledef.sml
+05/09/93 - add $mod: arithPrim, compileDef, primTypes
+10/09/93 - alter printblk (put "@ BlockList" after Ruby list)
+12/09/93 - ge, le, ureal2bit m n, sreal2bit m n, bit2ureal m n, bit2sreal m n,
+          int2real, real2int: alter circuittype, show, compileDef,
+          primTypes (add ji_ins_one_out etc)
+          (ps: may change re to accept parameter in bit2uint)
+         - also change re: add LE, GE in rubyeval.sml
+         - add "Let x0=e0, x1=e1 IN e END.":
+          alter ruby.lex, ruby.yacc, compileExp, rubytype
+14/09/93 - add $gtn, $geq, $ltn, $leq, $eq, NOT: arithPrim, compileDef
+          example in t6.
+08/10/93 - add blk_clk in data.sml, printblk.sml (also correct gclk error)
+02/02/95 - change compileDef, show: now "int2bit", "bit2int"
+26/05/95 - printrbs: show "." in poly wire
+16/11/95 - printedf: provide an EDF 200 backend
+01/12/95 - printvhd: provide an VHDL backend dedicated to Synopsys system.
+23/1/96  - fixed INV bug in printxnf.sml
+
+2008     - tjt: ported to SML of NJ 110 (search for tjt97)
+         - see e.g. http://www.smlnj.org/doc/Conversion/top-level-comparison.html
+		   for conversion hints
+		 - This also allows Ruby to run on 64-bit machines
+2011-13  - Verilog and Maxeler backends, experimental
+Jan 2014 - ported to current SML on DoC systems (search for Jan 2014, 
+             but note I didn't remember to mark them all)
+		 - thousands of trivial changes required by latest SML compiler
+		   to explicitly denote module (e.g. elem => Utilities.elem)
+		 - compiler used: Standard ML of New Jersey v110.74 
+		     [built: Fri Dec  7 10:09:50 2012]
+         - note that despite being the same major version as in 2008, this
+		   still needed thousands of changes. Even the final build call had to
+		   change to SMLofNJ.exportFn("rc", Main.rc)
+		 - also updated Maxeler backend to Maxeler V2 (e.g. HWVar => DFEVar)
+
+
+
+To create the "rc" compiler:
+
+
+
+Build instructions
+------------------
+
+Lexer and parser no longer compile with sml-lex / sml-yacc for some reason,
+so you can't alter the language syntax or lexing.
+
+Run the following from command line to build:
+
+$ make
+
+If the make fails for some reason, you can try to use SML to build the
+file (which is essentially what the makefile does).
+
+$ sml
+- use "all";
+- SMLofNJ.exportFn ("rc", Main.rc);
+- ^D
+
+HINT: use rlwrap sml to give Readline capabilities to SML REPL, making it
+      slightly less obnoxious to use.
+
+If the build succeeds, run the test suite using:
+
+$ make test
+
+
+tjt: note original build instructions are below
+
+$ sml-lex ruby.lex
+$ sml-yacc ruby.yacc
+$ sml
+- use "all";
+- SMLofNJ.exportFn ("rc", rc);
+- ^D
+
+See the file rebecca.doc for a brief description of each SML file

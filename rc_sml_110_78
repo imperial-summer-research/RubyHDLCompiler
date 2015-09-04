@@ -1,0 +1,2 @@
+#!/bin/sh
+/vol/cc/tjt97/tools/smlnj_install/bin/sml @SMLload=/vol/cc/tjt97/projects/ruby/compiler/rc.x86-linux  $*
