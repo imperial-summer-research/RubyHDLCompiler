@@ -16,12 +16,14 @@ structure PrintMax :
         (* could use some foldl-based quasi-monadic nightmare instead *)
         val inputCount : int ref
         val outputCount : int ref
+        val inputNodeToStreamId : ((int * int) list) ref
+        val outputNodeToStreamId : ((int * int) list) ref
 
 
         (* note we pass command line twice: one parsed into options, the other
            a raw char list *)
         val showMax : string -> Circuittype.pcircuit -> CommandLineParse.Defs -> char list -> string
-        val showMaxManager : string -> Circuittype.pcircuit -> CommandLineParse.Defs -> char list -> string
+        val showMaxManager : string -> ((string * Circuittype.pcircuit) * real) list -> string
   end =
 struct
 
@@ -33,7 +35,10 @@ struct
 (* could use some foldl-based quasi-monadic nightmare instead *)
 val inputCount = ref 0;
 val outputCount = ref 0;
-val tmpVectorCount = ref 0;
+
+(* vincent: Global stream id and node id dictionary *)
+val inputNodeToStreamId = ref [(0,0)]
+val outputNodeToStreamId= ref [(0,0)]
 
 (* utilities to simultaneously use and increment the input / output counters
  * this ensures each input or output name is unique, viz: in1, in2, etc.
@@ -382,31 +387,68 @@ fun showGateWithForwardDeclarations ((device, input, output), (inDefs, inStr, in
     (* build string of any forward definitions *)
     val (_, forwardDefsStr, forwardDefs2) = List.foldl forwardDeclareIfUndefined (inDefs, "", inForwardDefs) inNodes
   in
-    case outNodes of
-      [] => (
-        Errors.simple_error "Maxj: all devices must have one output (0)"
-      )
-    | [outp] => (
-      case List.find (fn x => x = outp) inForwardDefs of
-        SOME _ => 
-          (
-            outp::inDefs,
-            forwardDefsStr ^
-            inStr ^ 
-            (pushPipelineIfCyclic (inNodes, outp)) ^
-            (showGate (maxBackPatchForwardDeclaration) (device, input, output)) ^
-            (popPipelineIfCyclic (inNodes, outp)),
-            (* remove from forward defs *)
-            Utilities.snd (List.partition (fn x => x = outp) forwardDefs2)
-          )
-        | NONE =>
-          (
-            outp::inDefs,
-            forwardDefsStr ^ inStr ^ (showGate (maxShowNodeDefinition) (device, input, output)),
-            forwardDefs2
-          )
-      )
-     | _ => ( Errors.simple_error "Maxj: all devices must have one output (n)" )
+    (** 
+     * vincent 2015.09: 
+     * Here's a hack: if we met sdpr here, we set it as a "no explicit output" function.
+     * which means we could generate a sdpr function like this: 
+     * sdpr2(t1, "outp2", "outp3"); 
+     * the last 2 are output stream name
+     **)
+    case device of 
+      Circuittype.SDPR n => 
+      ( let 
+          val funcName = "sdpr" ^ Int.toString n ^ "(" ^ maxShowNode (List.hd inNodes) ^ ")"
+          val vecName  = "v_" ^ (Utilities.concatWith "_" (List.map maxShowNode outNodes))
+          val l1       = "   DFEVector<DFEVar> " ^ vecName ^ " = " ^ funcName ^ ";\n"
+          val ls       = 
+            ( List.foldl 
+              ( fn (x,l) => 
+                ( let 
+                    val initStr = vecName ^ "[" ^ Int.toString (List.length l) ^ "]"
+                    val declStr = 
+                    (* If this output has been declared before, just backpatch it *)
+                    ( case List.find (fn (y)=>y=x) inForwardDefs of 
+                        SOME _ => maxBackPatchForwardDeclaration (maxShowNode x) initStr
+                      | NONE   => maxShowNodeDefinition (maxShowNode x) initStr )
+                  in 
+                    l@[declStr]
+                  end ))
+              []
+              outNodes )
+          val backStr  = Utilities.concatWith "" ls
+        in
+        (
+          inDefs,
+          forwardDefsStr ^ inStr ^ l1 ^ backStr,
+          forwardDefs2
+        )
+        end )
+    | _ => 
+    ( case outNodes of
+        [] => (
+          Errors.simple_error "Maxj: all devices must have one output (0)"
+        )
+      | [outp] => (
+        case List.find (fn x => x = outp) inForwardDefs of
+          SOME _ => 
+            (
+              outp::inDefs,
+              forwardDefsStr ^
+              inStr ^ 
+              (pushPipelineIfCyclic (inNodes, outp)) ^
+              (showGate (maxBackPatchForwardDeclaration) (device, input, output)) ^
+              (popPipelineIfCyclic (inNodes, outp)),
+              (* remove from forward defs *)
+              Utilities.snd (List.partition (fn x => x = outp) forwardDefs2)
+            )
+          | NONE =>
+            (
+              outp::inDefs,
+              forwardDefsStr ^ inStr ^ (showGate (maxShowNodeDefinition) (device, input, output)),
+              forwardDefs2
+            )
+        )
+       | _ => ( Errors.simple_error "Maxj: all devices must have one output (n)" ) )
   end
 
 
@@ -463,28 +505,17 @@ fun showWiring (dom, ran) = "\n // Wiring -  " ^
                             showExpr dom ^ " ~ " ^ showExpr ran ^ "\n"
 
 (* declare input *)
+(* vincent 2015.09: revised to add value to dictionary *)
 fun showInput e = 
-    maxShowNodeDefinition 
-        (*nodeStr= *) 
-            (case !e of
-                    Circuittype.CON k       => "/*con*/ " ^ Show.showConst k
-                  | Circuittype.WIRE (Circuittype.POLY,name,_) => 
-                        "/*poly*/ " ^ maxShowNode name (* use ":"? *)
-                  | Circuittype.WIRE (_,   name,_) => "/*_*/ " ^ maxShowNode name
-                  | Circuittype.LIST es            => 
-                        "<" ^
-                            Utilities.concatWith "," (map showInput es) ^
-                        ">"
-                  | Circuittype.EXPR x             => showInput x
-                 )
-        (* initStr= *)
-            (
-             "io.input(\"inp" ^
-             (* use and increment the input counter *)
-             (Int.toString (nextInputName())) ^
-             "\", dataType)"
-             )
-
+  let 
+    val nextInput = nextInputName()
+    val nodeId    = List.hd (exprNodes e) (* assume input only has one node *)
+    val it        = (inputNodeToStreamId := ((nodeId,nextInput)::(!inputNodeToStreamId)))
+    val nodeName  = maxShowNode nodeId
+    val initStr   = "io.input(\"inp" ^ Int.toString nextInput ^ "\", dataType)"
+  in 
+    maxShowNodeDefinition nodeName initStr
+  end
 
 (* isInputDir: true iff input is IN or POLY (bidirectional, which we interpret
 as input) *)
@@ -567,22 +598,16 @@ fun showDirections (dom, ran)
           end
 
 (* declare output *)
+(* vincent 2015.09: add support for dictionary *)
 fun showOutput e = 
-            "      io.output(\"out" ^
-            Int.toString (nextOutputName()) ^
-            "\", " ^
-            (case !e of
-                    Circuittype.CON k       => Show.showConst k
-                  | Circuittype.WIRE (Circuittype.POLY,name,_) => 
-                        "/*poly*/ " ^ maxShowNode name (* use ":"? *)
-                  | Circuittype.WIRE (_,   name,_) => "/*_*/ " ^ maxShowNode name
-                  | Circuittype.LIST es            => 
-                        "<" ^
-                            Utilities.concatWith "," (map showOutput es) ^
-                        ">"
-                  | Circuittype.EXPR x             => showOutput x
-                 ) ^
-             ", dataType);"
+  let 
+    val nextOutput = nextOutputName ()
+    val nodeId     = List.hd (exprNodes e) (* assume input only has one node *)
+    val it        = (outputNodeToStreamId := ((nodeId,nextOutput)::(!outputNodeToStreamId)))
+    val nodeName  = maxShowNode nodeId
+  in 
+    "      io.output(\"out" ^ Int.toString nextOutput ^ "\", " ^ nodeName ^ ", dataType);"
+  end
 
 (* print outputs 
    each output becomes an io.output call
@@ -696,6 +721,7 @@ fun showOptionArgsOrDefault
 (* default values for user options *)
 val defaultPackageName = "myapp_pkg"
 val defaultDataType    = "dfeFloat(8, 24)"
+val defaultStreamDataType = "CPUTypes.FLOAT"
 val defaultPreamble    = ""
 val defaultPostamble   = ""
 val defaultUserImports = ""
@@ -715,16 +741,21 @@ fun showFuncDummyParams n prefix =
     Utilities.concatWith "," (List.tabulate(n, fn x => prefix ^ " t" ^ Int.toString x))
 
 fun showMaxPDSRDef n = 
-    "\tprivate DFEVar pdsr" ^ Int.toString n ^ "(" ^ showFuncDummyParams n "DFEVar" ^ ") {\n" ^
-    "\t  DFEVar counter = control.count.simpleCounter(MathUtils.bitsToAddress(" ^ Int.toString n ^ "));\n" ^
-    "\t  return control.mux(counter," ^ showFuncDummyParams n "" ^ ");\n" ^
-    "\t}\n"
+    "   private DFEVar pdsr" ^ Int.toString n ^ "(" ^ showFuncDummyParams n "DFEVar" ^ ") {\n" ^
+    "      DFEVar counter = control.count.simpleCounter(MathUtils.bitsToAddress(" ^ Int.toString n ^ "));\n" ^
+    "      return control.mux(counter," ^ showFuncDummyParams n "" ^ ");\n" ^
+    "   }\n"
 
 fun showMaxSDPRDef n = 
-    "\tprivate DFEVar sdpr" ^ Int.toString n ^ "(" ^ showFuncDummyParams n "DFEVar" ^ ") {\n" ^
-    "\t  DFEVar counter = control.count.simpleCounter(MathUtils.bitsToAddress(" ^ Int.toString n ^ "));\n" ^
-    "\t  return control.mux(counter," ^ showFuncDummyParams n "" ^ ");\n" ^
-    "\t}\n"
+    "   private DFEVector<DFEVar> sdpr" ^ Int.toString n ^ "(DFEVar t0) {\n" ^
+    "      DFEVar counter = control.count.simpleCounter(MathUtils.bitsToAddress(" ^ Int.toString n ^ "));\n" ^
+    "      DFEVector<DFEVar> v = (new DFEVectorType(t0.getType(), " ^ Int.toString n ^ ").newInstance(this);\n" ^
+    "      if (counter === 0)\n" ^ 
+    "      { v[0] <== t0; v[1] <== constants.var(0); } \n" ^ 
+    "      else\n" ^ 
+    "      { v[0] <== constants.var(0); v[1] <== t0; }\n" ^ 
+    "      return v;\n" ^
+    "    }\n"
 
 (* hardcoded function *)
 fun showMaxBuiltInDefs funcs = 
@@ -806,6 +837,7 @@ fun showMax currentName (dom, ran, rels)   commandLineOptions
         "////////////////////////////////////////////////////////////////////\n"
         end
 
+(** vincent 2015.09: add print manager support **)
 val stdMaxManagerImports =
         "import com.maxeler.maxcompiler.v2.build.EngineParameters;\n" ^
         "import com.maxeler.maxcompiler.v2.managers.custom.CustomManager;\n" ^
@@ -815,34 +847,154 @@ val stdMaxManagerImports =
         "import com.maxeler.maxcompiler.v2.managers.engine_interfaces.EngineInterface;\n" ^
         "import com.maxeler.maxcompiler.v2.managers.engine_interfaces.InterfaceParam;\n"
 
-fun showMaxManager currentName (dom, ran, rels)   commandLineOptions
-              spacedCommandLine
-    = 
-    let val circuitInputNodes = circuitInputs (dom, ran)
-        val currentManagerName = currentName ^ "Manager"
+val showDefaultClockValue = "   float clk = 100;\n   config.setDefaultStreamClockFrequency(clk);\n"
+
+fun showMaxKernelBlock name n = 
+  "   KernelBlock k" ^ Int.toString n ^ " = new " ^ name ^ "(\"" ^ name ^ "\", makeKernelParameters(params));\n" 
+
+fun showMaxKernelBlockClockConfig clk n = 
+  "   ManagerClock clk" ^ Int.toString n ^ " = generateStreamClock(\"clk" ^ Int.toString n ^ "\", clk * " ^ Real.toString clk ^ ");\n" ^
+  "   k" ^ Int.toString n ^ ".setClock(clk" ^ Int.toString n ^ ");\n"
+fun showMaxKernelTick clk name n = 
+  "   ei.setTicks(\"" ^ name ^ "\", N * " ^ Real.toString clk ^ ");\n"
+
+(** Copy and paste **)
+fun setDictInValue v nid dict =
+  case List.find (fn(x,_) => x=nid) dict of
+    SOME (_,value) =>
+    ((case !value of (_,j) => value := (SOME v,j) ); 
+      dict)
+  | NONE => (nid, ref (SOME v, NONE))::dict
+
+fun setDictOutValue v nid dict =
+  case List.find (fn(x,_) => x=nid) dict of
+    SOME (_,value) =>
+    ((case !value of (i,_) => value := (i,SOME v) ); 
+      dict)
+  | NONE => (nid, ref (NONE, SOME v))::dict
+
+(** 
+ * getMaxKernelConnection: will build a dictionary with node id as key
+ * input kernel id and output kernel id as value 
+ **)
+fun getMaxKernelConnection []         _ dict = dict
+  | getMaxKernelConnection (pc::pcs)  n dict = 
+  ( let 
+      val (dom,ran,rels) = pc
+      val inNodes        = exprNodes dom
+      val outNodes       = exprNodes ran
+      (* update dictionary *)
+      val d1 = List.foldl (fn (x,d) => setDictInValue  n x d) dict inNodes
+      val d2 = List.foldl (fn (x,d) => setDictOutValue n x d) d1   outNodes
+      val nd = getMaxKernelConnection pcs (n+1) d2
     in
-        (outputBanner currentName spacedCommandLine) ^ "\n" ^
-        "//\n" ^
-        "// Imports:\n" ^
-        "// standard imports:\n" ^
-        stdMaxManagerImports ^
-        "\n" ^
-        "// class:\n" ^
-        "public class " ^ currentManagerName ^ " extends CustomManager {\n" ^
-        "\n" ^
-        "  public " ^ currentManagerName ^ " (EngineParameters params) {\n" ^
-        "    super(params);\n" ^
-        (* KernelBlock definition kernel's name should be currentKernel *)
-        "    KernelBlock" ^
-        "\n" ^
-        "  } // end constructor\n" ^
-        (* EngineInterface definition *)
-        "  public static EngineInterface interfaceDefault() {\n" ^
-        
-        "  }\n" ^
-        "} // end class\n" ^
-        "////////////////////////////////////////////////////////////////////\n"
-    end
+      nd
+    end )
+
+fun findStreamIdByNodeId nid d = 
+  case List.find (fn(x,_)=>x=nid) (!d) of 
+    SOME (x,i) => SOME i
+  | NONE       => NONE
+
+fun showMaxKernelStreamInput  k i = "k" ^ Int.toString k ^ ".getInput(\"inp"  ^ Int.toString i ^ "\")" 
+fun showMaxKernelStreamOutput k i = "k" ^ Int.toString k ^ ".getOutput(\"out" ^ Int.toString i ^ "\")" 
+fun showStreamToCpu   n = "addStreamToCPU(\""   ^ n ^ "\")"
+fun showStreamFromCpu n = "addStreamFromCPU(\"" ^ n ^ "\")"
+
+fun showMaxKernelConnection []          fns tns = ("", fns, tns)
+  | showMaxKernelConnection ((id,v)::d) fns tns = 
+  ( let 
+      val iStreamId = findStreamIdByNodeId id inputNodeToStreamId
+      val oStreamId = findStreamIdByNodeId id outputNodeToStreamId
+      val (connStr, f, t) = 
+      ( case !v of 
+        (* if this wire connected to 2 kernels *)
+          (SOME(i),SOME(j)) => 
+          ( let 
+              val inpStr = showMaxKernelStreamInput  i (valOf iStreamId)
+              val outStr = showMaxKernelStreamOutput j (valOf oStreamId)
+            in 
+              ("   " ^ inpStr ^ " <== " ^ outStr ^ ";\n", fns, tns)
+            end )
+        | (SOME(i),NONE)    => 
+          ( let 
+              val inpStr = showMaxKernelStreamInput i (valOf iStreamId) 
+              val fname  = "cpu2board_" ^ Int.toString (List.length fns)
+              val outStr = showStreamFromCpu fname
+            in 
+              ("   " ^ inpStr ^ " <== " ^ outStr ^ ";\n", fname::fns, tns) 
+            end ) 
+        | (NONE,  SOME(j))  =>
+          ( let 
+              val tname  = "board2cpu_" ^ Int.toString (List.length tns)
+              val inpStr = showStreamToCpu tname
+              val outStr = showMaxKernelStreamOutput j (valOf oStreamId) 
+            in 
+              ("   " ^ inpStr ^ " <== " ^ outStr ^ ";\n", fns, tname::tns) 
+            end ))
+      val (s,ff,tt) = showMaxKernelConnection d f t
+    in 
+      (connStr ^ s, ff, tt)
+    end )
+    
+fun showMaxSetStream sn = "   ei.setStream(\"" ^ sn ^ "\", N);\n"
+
+fun parseManager manager =
+  case ListPair.unzip manager of 
+    (kernelList, clockList) => 
+    ( case ListPair.unzip kernelList of 
+      (kernelNameList, pcs) => (kernelNameList, pcs, clockList) )
+
+fun showMaxManager name manager = 
+  let 
+    val (kns,pcs,kcs) = parseManager manager
+    val kbdecls = List.foldl (fn (x,l) => l@[(showMaxKernelBlock x (List.length l))]) [] kns
+    val kbdecl  = Utilities.concatWith "" kbdecls
+    val kcdecls = List.foldl (fn (x,l) => l@[(showMaxKernelBlockClockConfig x (List.length l))]) [] kcs
+    val kcdecl  = Utilities.concatWith "" kcdecls
+    val kconns  = getMaxKernelConnection pcs 0 []
+    val (kcnstr, fns, tns) = showMaxKernelConnection kconns [] []
+    val kticks  = List.foldl (fn ((c,n),l) => l@[(showMaxKernelTick c n (List.length l))]) [] (ListPair.zip (kcs,kns))
+    val ktdecl  = Utilities.concatWith "" kticks
+    val sstream = List.foldl (fn (n,s) => (showMaxSetStream n) ^ s) "" (fns@tns)
+  in
+    "//\n" ^
+    "// Imports:\n" ^
+    "// standard imports:\n" ^
+    stdMaxManagerImports ^
+    "\n" ^
+    "// class:\n" ^
+    "public class " ^ name ^ " extends CustomManager {\n" ^
+    "\n" ^
+    "public " ^ name ^ " (EngineParameters params) {\n" ^
+    "   super(params);\n" ^
+    (* KernelBlock definition kernel's name should be currentKernel *)
+    "\n   // kernel block declarations:\n" ^
+    kbdecl ^
+    "\n   // kernel block clocks declarations:\n" ^
+    showDefaultClockValue ^ 
+    kcdecl ^
+    "\n   // DFELinks declarations:\n" ^
+    kcnstr ^ 
+    "\n" ^
+    "   createSLiCInterface(interfaceDefault());\n" ^
+    "} // end constructor\n" ^
+    (* EngineInterface definition *)
+    "public static EngineInterface interfaceDefault() {\n" ^
+    "   EngineInterface ei = new EngineInterface();\n" ^
+    "   InterfaceParam N = ei.addParam(\"N\", CPUTypes.INT);\n" ^ 
+    "\n   // set ticks\n" ^
+    ktdecl ^
+    "\n   // set streams\n" ^
+    sstream ^
+    "}\n" ^
+    "public static void main(String [] args) {\n" ^ 
+    "   " ^ name ^ " m = new " ^ name ^ "(new EngineParameters(args));\n" ^
+    "   m.build();\n" ^
+    "}\n" ^
+    "} // end class\n" ^
+    "////////////////////////////////////////////////////////////////////\n"
+  end
 (**************************************************************************)
 (**************************************************************************)
 

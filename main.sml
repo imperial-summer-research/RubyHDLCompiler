@@ -141,11 +141,25 @@ fun rcomp file commandLineOptions spacedCommandLine
 		(* tjt: Maxeler MaxJ *)
     (* vincent: add support for multiple kernels generation *)
 	   if    !genMAX
-       then  let  
-                val maxGraph = MaxGraph.buildGraph pcircuit
-                val outKernelFile  = TextIO.openOut (current^"Kernel.maxj")
-                val outManagerFile = TextIO.openOut (current^"Manager.maxj")
-             in   
+       then let  
+              val (kernelList, manager) = MaxGraph.splitKernel pcircuit
+            in   
+            ( List.app 
+              ( fn (name,pc) => 
+                ( let val outFile  = TextIO.openOut (name^".maxj") in 
+                  ( TextIO.output 
+                      ( outFile, 
+                        PrintMax.showMax name pc commandLineOptions
+                        spacedCommandLine);
+                    TextIO.closeOut outFile)
+                  end ))
+              kernelList;
+              ( let val outFile = TextIO.openOut "Manager.maxj" in
+                  ( TextIO.output 
+                    ( outFile, 
+                      PrintMax.showMaxManager "Manager0" manager);
+                    TextIO.closeOut outFile) 
+                end ))
 			 	(*
                 (TextIO.output (outKernelFile, 
 				    PrintMax.showMax current pcircuit commandLineOptions
@@ -157,7 +171,6 @@ fun rcomp file commandLineOptions spacedCommandLine
                         spacedCommandLine);
                    TextIO.closeOut outManagerFile))
                 *)
-                TextIO.closeOut outManagerFile
              end
        else  ();
 
